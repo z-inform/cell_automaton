@@ -11,7 +11,7 @@ struct CoordArr {
 struct CellNumber {
     unsigned char cell_type;
     unsigned char cell_number;
-}
+};
 
 struct RuleStruct {
     unsigned char target_type;
