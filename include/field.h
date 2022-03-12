@@ -24,7 +24,16 @@ struct group_struct{
 
 typedef struct group_struct Group;
 
-typedef Group* Field;
+struct field_node_struct;
+typedef field_node_struct field_node;
+
+field_node{
+    Group* group_ptr;
+    field_node* next;
+    field_node* prev;
+};
+
+typedef field_node* Field;
 
 int field_step(Field* field_state);
 void field_free(Field* field_ptr);
