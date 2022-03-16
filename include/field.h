@@ -25,9 +25,9 @@ struct group_struct{
 typedef struct group_struct Group;
 
 struct field_node_struct;
-typedef field_node_struct field_node;
+typedef struct field_node_struct field_node;
 
-field_node{
+struct field_node_struct{
     Group* group_ptr;
     field_node* next;
     field_node* prev;
@@ -35,7 +35,7 @@ field_node{
 
 typedef field_node* Field;
 
-int field_step(Field* field_state);
+int field_step(Field* field_ptr);
 void field_free(Field* field_ptr);
-int field_resplit(Field* field_state);
+int field_resplit(Field* field_ptr);
 int group_step(Group* group_ptr); 

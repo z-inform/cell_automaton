@@ -7,18 +7,20 @@ int neighbour_count(Group* group_ptr, unsigned int x, unsigned int y);
 int row_cells(Group* group_ptr, unsigned int y);
 int column_cells(Group* group_ptr, unsigned int x);
 int group_resize(Group* group_ptr);
+Group* find_cell_group(Field* field_ptr, int x, int y);
+uint8_t global_cell_status(Field* field_ptr, int x, int y);
 
 void field_free(Field* field_ptr){
         
     field_node* cur_node = field_ptr[0];
 
     for(int i = 0; cur_node -> next != NULL; i++){
-        free(cur_node -> group -> group_block);
+        free(cur_node -> group_ptr -> group_block);
         cur_node = cur_node -> next;
         free(cur_node -> prev);    
     }
 
-    free(cur_node -> group -> group_block);
+    free(cur_node -> group_ptr -> group_block);
     free(cur_node -> prev);    
 
 }
@@ -46,7 +48,7 @@ int group_step(Group* group_ptr){
     return 0;
 }
 
-int field_step(Field* field_state){
+int field_step(Field* field_ptr){
 
     field_node* cur_node = field_ptr[0];
 
@@ -55,7 +57,7 @@ int field_step(Field* field_state){
         cur_node = cur_node -> next;
     }
 
-    field_resplit(Field* field_state);
+    field_resplit(field_ptr);
 
     return 0;
 }
@@ -95,6 +97,7 @@ int row_cells(Group* group_ptr, unsigned int y){
     for(unsigned int i = 0; i < group_ptr -> x_group_size; i++){
         count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, i, y);
     }
+    return count;
 }
 
 int column_cells(Group* group_ptr, unsigned int x){
@@ -102,11 +105,12 @@ int column_cells(Group* group_ptr, unsigned int x){
     for(unsigned int i = 0; i < group_ptr -> y_group_size; i++){
         count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x, i);
     }
+    return count;
 }
 
 int group_resize(Group* group_ptr){
-    int x_coord_start = group_ptr -> group_coord -> x;
-    int y_coord_start = group_ptr -> group_coord -> y;
+    int x_coord_start = group_ptr -> group_coord.x;
+    int y_coord_start = group_ptr -> group_coord.y;
     unsigned int x_start = 0;
     unsigned int y_start = 0;
     unsigned int x_end = group_ptr -> x_group_size;
@@ -114,7 +118,7 @@ int group_resize(Group* group_ptr){
     
 
     if (row_cells(group_ptr, 0)){ //if alive cells on lower group boundary expand downwards
-        group_ptr -> group_coord -> y -= 1;
+        group_ptr -> group_coord.y -= 1;
         group_ptr -> y_group_size += 1;
     }
 
@@ -123,7 +127,7 @@ int group_resize(Group* group_ptr){
     }
 
     if (column_cells(group_ptr, 0)){ //if alive cells on left group boundary expand left
-        group_ptr -> group_coord -> x -= 1;
+        group_ptr -> group_coord.x -= 1;
         group_ptr -> x_group_size += 1;
     }
 
@@ -133,7 +137,7 @@ int group_resize(Group* group_ptr){
 
 
     for(unsigned int i = 1; !row_cells(group_ptr, i); i++){ //cut empty rows from the bottom
-        group_ptr -> group_coord -> y += 1;
+        group_ptr -> group_coord.y += 1;
         group_ptr -> y_group_size -= 1;
         y_start += 1;
     }
@@ -144,7 +148,7 @@ int group_resize(Group* group_ptr){
     }
 
     for(unsigned int i = 1; !column_cells(group_ptr, i); i++){ //cut empty rows from the left
-        group_ptr -> group_coord -> x += 1;
+        group_ptr -> group_coord.x += 1;
         group_ptr -> x_group_size -= 1;
         x_start += 1;
     }
@@ -154,8 +158,8 @@ int group_resize(Group* group_ptr){
         x_end -= 1;
     }
 
-    unsigned int x_offset = (unsigned int) (x_coord_start - (group_ptr -> group_coord -> x));
-    unsigned int y_offset = (unsigned int) (y_coord_start - (group_ptr -> group_coord -> y));
+    unsigned int x_offset = (unsigned int) (x_coord_start - (group_ptr -> group_coord.x));
+    unsigned int y_offset = (unsigned int) (y_coord_start - (group_ptr -> group_coord.y));
 
     if ((x_offset == 0) && (y_offset == 0) && //no need to realloc if field size has not changed
         ((x_end - x_start) == group_ptr -> x_group_size) &&
@@ -175,6 +179,32 @@ int group_resize(Group* group_ptr){
     group_ptr -> group_block = new_block;
 
     return 0;
+}
+
+Group* find_cell_group(Field* field_ptr, int x, int y){
+
+    field_node* cur_node = field_ptr[0];
+    Group* target_group = NULL;
+
+    for(int i = 0; cur_node != NULL; i++){
+        target_group = cur_node -> group_ptr;
+        if ((x < target_group -> group_coord.x) || 
+            (y < target_group -> group_coord.y) ||
+            (x > (target_group -> group_coord.x + (int) target_group -> x_group_size)) ||
+            (y > (target_group -> group_coord.y + (int) target_group -> y_group_size)))
+            continue;
+
+        return target_group;
+
+        cur_node = cur_node -> next;
+    }
+
+    return NULL;
+}
+
+uint8_t global_cell_status(Field* field_ptr, int x, int y){
+    Group* target_group = find_cell_group(field_ptr, x, y);
+    return COORDVAL(target_group -> group_block, target_group -> x_group_size, x - target_group -> group_coord.x, y - target_group -> group_coord.y);
 }
 
 #undef GETVAL
