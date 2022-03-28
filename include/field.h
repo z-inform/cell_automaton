@@ -38,4 +38,5 @@ typedef field_node* Field;
 int field_step(Field* field_ptr);
 void field_free(Field* field_ptr);
 int field_resplit(Field* field_ptr);
+int field_merge(Field* field_ptr);
 int group_step(Group* group_ptr); 
