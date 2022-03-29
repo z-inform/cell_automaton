@@ -1,14 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -I./$(INCLDIR)
+CFLAGS = -Wall -Wextra -I./$(INCLDIR) -fsanitize=address -g -O0
 
-PROG = $(BUILDDIR)/snake.elf
-MODULES = shapegen field main
+PROG = $(BUILDDIR)/cell.elf
+MODULES = field main
 OBJ = $(addsuffix .o, $(MODULES))
 SRC = $(addsuffix .cpp, $(MODULES))
 
 BUILDDIR = build
 SRCDIR = src
-INCLDIR = inlude
+INCLDIR = include
 
 all : $(PROG)
 

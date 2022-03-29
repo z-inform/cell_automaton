@@ -3,11 +3,12 @@
 #include <limits.h>
 
 #define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + SX * (Y) + X))
+#define MAX(X, Y) ((X > Y) ? (X) : (Y))
+#define MIN(X, Y) ((X < Y) ? (X) : (Y))
 
 int neighbour_count(Group* group_ptr, unsigned int x, unsigned int y);
 int row_cells(Group* group_ptr, unsigned int y);
 int column_cells(Group* group_ptr, unsigned int x);
-int group_resize(Group* group_ptr);
 field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y); 
 Group* find_cell_group(Field* field_ptr, int x, int y);
 uint8_t global_cell_status(Field* field_ptr, int x, int y);
@@ -27,7 +28,11 @@ void field_free(Field* field_ptr){
     }
 
     free(cur_node -> group_ptr -> group_block);
-    free(cur_node -> prev);    
+    free(cur_node -> group_ptr);
+    if (cur_node -> prev != NULL)
+        free(cur_node -> prev);    
+
+    free(cur_node);
 
 }
 
@@ -63,7 +68,8 @@ int field_step(Field* field_ptr){
         cur_node = cur_node -> next;
     }
 
-    field_resplit(field_ptr);
+    field_split(field_ptr);
+    field_merge(field_ptr);
 
     return 0;
 }
@@ -147,14 +153,21 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
     field_node* second_node = malloc(sizeof(field_node));
         
     //set up all the addresses
-    node_ptr -> prev -> next = first_node;
-    node_ptr -> next -> prev = second_node;
+
+    if (node_ptr -> prev != NULL)
+        node_ptr -> prev -> next = first_node;
+
+    if (node_ptr -> next != NULL)
+        node_ptr -> next -> prev = second_node;
 
     first_node -> prev = node_ptr -> prev;
     first_node -> next = second_node;
 
     second_node -> prev = first_node;
     second_node -> next = node_ptr -> next;
+
+    first_node -> group_ptr = malloc(sizeof(Group));
+    second_node -> group_ptr = malloc(sizeof(Group));
 
     //distribute block
     
@@ -163,11 +176,11 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
 
     first_group -> x_group_size = (x) ? (x) : (group_ptr -> x_group_size);
     first_group -> y_group_size = (y) ? (y) : (group_ptr -> y_group_size);
-    first_group -> group_block = malloc(first_group -> x_group_size * first_group -> y_group_size);
+    first_group -> group_block = calloc(first_group -> x_group_size * first_group -> y_group_size, 1);
 
     second_group -> x_group_size = (x) ? (group_ptr -> x_group_size - x - 1) : (group_ptr -> x_group_size);
     second_group -> y_group_size = (y) ? (group_ptr -> y_group_size - y - 1) : (group_ptr -> y_group_size);
-    second_group -> group_block = malloc(second_group -> x_group_size * second_group -> y_group_size);
+    second_group -> group_block = calloc(second_group -> x_group_size * second_group -> y_group_size, 1);
 
     if (y == 0) { //split on a column
         for (unsigned int i = 0; i < x; i++) {
@@ -219,7 +232,7 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
 int neighbour_count(Group* group_ptr, unsigned int x, unsigned int y){
     uint8_t count = 0;
 
-    if (x != group_ptr -> x_group_size) {
+	if (x != group_ptr -> x_group_size) {
         for(char i = -1; i <= 1; i++) {
             count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x + 1, y + i);
         }
@@ -306,6 +319,124 @@ int global_neighbour_count(Field* field_ptr, int x, int y){
 
 //------------Field split/merge---------------
 
+int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group){
+    if ((other_group -> group_coord.x > (cur_group -> group_coord.x + (int) cur_group -> x_group_size + 1)) || //other is too far right
+        (other_group -> group_coord.y > (cur_group -> group_coord.y + (int) cur_group -> y_group_size + 1)) || //other is too far up
+        (cur_group -> group_coord.x > (other_group -> group_coord.x + (int) other_group -> x_group_size + 1)) || //cur is too far right
+        (cur_group -> group_coord.y > (other_group -> group_coord.y + (int) other_group -> y_group_size + 1))) { //cur is too far up
+        return 0;   
+    }
+
+    if ((other_group -> group_coord.x < (cur_group -> group_coord.x + (int) cur_group -> x_group_size)) || //the opposite to previous checks
+        (other_group -> group_coord.y < (cur_group -> group_coord.y + (int) cur_group -> y_group_size)) || 
+        (cur_group -> group_coord.x < (other_group -> group_coord.x + (int) other_group -> x_group_size)) || 
+        (cur_group -> group_coord.y < (other_group -> group_coord.y + (int) other_group -> y_group_size))) { 
+        return 1;   
+    }
+
+    //and now for the hard part
+    
+    if (other_group -> group_coord.x == (cur_group -> group_coord.x + (int) cur_group -> x_group_size + 1)) { //other on the right
+        int start = MAX(other_group -> group_coord.y, cur_group -> group_coord.y);
+        int end = MIN(other_group -> group_coord.y + (int) other_group -> y_group_size, cur_group -> group_coord.y + (int) cur_group -> y_group_size);
+        for (int y = start; y < end; y++) {
+            if (global_neighbour_count(field_ptr, other_group -> group_coord.x - 1, y) == 3)
+                return 1;
+        }
+    }
+
+    if (cur_group -> group_coord.x == (other_group -> group_coord.x + (int) other_group -> x_group_size + 1)) { //cur on the right
+        int start = MAX(other_group -> group_coord.y, cur_group -> group_coord.y);
+        int end = MIN(other_group -> group_coord.y + (int) other_group -> y_group_size, cur_group -> group_coord.y + (int) cur_group -> y_group_size);
+        for (int y = start; y < end; y++) {
+            if (global_neighbour_count(field_ptr, cur_group -> group_coord.x - 1, y) == 3)
+                return 1;
+        }
+    }
+
+    if (other_group -> group_coord.y == (cur_group -> group_coord.y + (int) cur_group -> y_group_size + 1)) { //other on top
+        int start = MAX(other_group -> group_coord.x, cur_group -> group_coord.x);
+        int end = MIN(other_group -> group_coord.x + (int) other_group -> x_group_size, cur_group -> group_coord.x + (int) cur_group -> x_group_size);
+        for (int x = start; x < end; x++) {
+            if (global_neighbour_count(field_ptr, x, other_group -> group_coord.y - 1) == 3)
+                return 1;
+        }
+    }
+
+    if (cur_group -> group_coord.y == (other_group -> group_coord.y + (int) other_group -> y_group_size + 1)) { //cur on top
+        int start = MAX(other_group -> group_coord.x, cur_group -> group_coord.x);
+        int end = MIN(other_group -> group_coord.x + (int) other_group -> x_group_size, cur_group -> group_coord.x + (int) cur_group -> x_group_size);
+        for (int x = start; x < end; x++) {
+            if (global_neighbour_count(field_ptr, x, cur_group -> group_coord.y - 1) == 3)
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
+field_node* check_intersections(Field* field_ptr, field_node* cur_node){
+    field_node* iter_node = field_ptr[0];
+
+    while (iter_node != NULL) {
+        if ((iter_node != cur_node) && check_common_borders(field_ptr, cur_node -> group_ptr, iter_node -> group_ptr))
+            return iter_node;
+    }
+
+    return NULL;
+}
+
+int group_merge(field_node* cur_node, field_node* other_node){
+    Group* cur_group = cur_node -> group_ptr;
+    Group* other_group = other_node -> group_ptr;
+
+    coord_pair new_coord; //bottom left 
+    unsigned int x_size;
+    unsigned int y_size;
+
+    new_coord.x = MIN(cur_group -> group_coord.x, other_group -> group_coord.x);
+    new_coord.y = MIN(cur_group -> group_coord.y, other_group -> group_coord.y);
+
+    x_size = MAX(cur_group -> group_coord.x, other_group -> group_coord.x) - new_coord.x;
+    y_size = MAX(cur_group -> group_coord.y, other_group -> group_coord.y) - new_coord.y;
+
+    Group* new_group = malloc(sizeof(Group));
+
+    field_node* new_node = malloc(sizeof(field_node));
+    new_node -> prev = cur_node -> prev;
+    new_node -> next = other_node -> next;
+    new_node -> group_ptr = new_group;
+
+    new_group -> group_coord = new_coord;
+    new_group -> x_group_size = x_size;
+    new_group -> y_group_size = y_size;
+    new_group -> group_block = calloc(x_size * y_size, 1);
+
+    for (unsigned int x = 0; x < (cur_group -> x_group_size); x++) {
+        for (unsigned int y = 0; y < (cur_group -> y_group_size); y++) {
+            COORDVAL(new_group -> group_block, x_size, x + (unsigned int) (cur_group -> group_coord.x - new_coord.x), y + (unsigned int) (cur_group -> group_coord.y - new_coord.y)) = 
+                COORDVAL(cur_group, cur_group -> x_group_size, x, y);
+        }
+    }
+
+    for (unsigned int x = 0; x < (other_group -> x_group_size); x++) {
+        for (unsigned int y = 0; y < (other_group -> y_group_size); y++) {
+            COORDVAL(new_group -> group_block, x_size, x + (unsigned int) (other_group -> group_coord.x - new_coord.x), y + (unsigned int) (other_group -> group_coord.y - new_coord.y)) = 
+                COORDVAL(other_group, other_group -> x_group_size, x, y);
+        }
+    }
+
+    free(cur_group -> group_block);
+    free(cur_group);
+    free(cur_node);
+
+    free(other_group -> group_block);
+    free(other_group);
+    free(other_node);
+
+    return 0;
+}
+
 int field_merge(Field* field_ptr){
       field_node* cur_node = field_ptr[0];
       
@@ -320,7 +451,7 @@ int field_merge(Field* field_ptr){
                   group_merge(cur_node, other_node);
                   while (1) {
                       other_node = check_intersections(field_ptr, cur_node);
-                      if (other_group == NULL)
+                      if (other_node == NULL)
                           break;
                       group_merge(cur_node, other_node);
                   }                
@@ -386,3 +517,5 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
 }
 
 #undef COORDVAL
+#undef MAX
+#undef MIN
