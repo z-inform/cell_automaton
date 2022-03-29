@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <limits.h>
 
-#define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + SX * (Y) + X))
+#define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + (SX) * (Y) + X))
 #define MAX(X, Y) ((X > Y) ? (X) : (Y))
 #define MIN(X, Y) ((X < Y) ? (X) : (Y))
 
@@ -82,15 +82,16 @@ int group_resize(Group* group_ptr){
     int x_coord_new = group_ptr -> group_coord.x; //new global coords
     int y_coord_new = group_ptr -> group_coord.y;
 
-    unsigned int x_size = group_ptr -> x_group_size; //size of new block
-    unsigned int y_size = group_ptr -> y_group_size;
+    unsigned int x_size = group_ptr -> x_group_size - 2; //size of new block (without borders)
+    unsigned int y_size = group_ptr -> y_group_size - 2;
 
-    unsigned int x_start = 0; //local coords in old block that show start of useful data
-    unsigned int y_start = 0;
+    unsigned int x_start = 1; //local coords in old block that show start of useful data
+    unsigned int y_start = 1;
 
     if (row_cells(group_ptr, 0)){ //if alive cells on lower group boundary expand downwards
         y_coord_new -= 1;
         y_size += 1;
+        y_start -= 1;
     } else {
         for(unsigned int i = 1; !row_cells(group_ptr, i); i++){ //cut empty rows from the bottom
             y_coord_new += 1;
@@ -112,6 +113,7 @@ int group_resize(Group* group_ptr){
     if (column_cells(group_ptr, 0)){ //if alive cells on left group boundary expand left
         x_coord_new -= 1;
         x_size += 1;
+        x_start -= 1;
     } else {
         for(unsigned int i = 1; !column_cells(group_ptr, i); i++){ //cut empty rows from the left
             x_coord_new += 1;
@@ -133,24 +135,27 @@ int group_resize(Group* group_ptr){
     int y_offset = (y_coord_new - (group_ptr -> group_coord.y));
 
     if ((x_offset == 0) && (y_offset == 0) && //no need to realloc if field size has not changed
-         (x_size == group_ptr -> x_group_size) &&
-         (y_size == group_ptr -> y_group_size)){
+         (x_size == group_ptr -> x_group_size - 2) &&
+         (y_size == group_ptr -> y_group_size - 2)){
         return 0;
     }
 
-    void* new_block = calloc(x_size * y_size, 1);
+    void* new_block = calloc((x_size + 2) * (y_size + 2), 1);
 
+    //printf("xsize = %d; ysize = %d\n", x_size, y_size);
+    //printf("xstart = %d; ystart = %d\n", x_start, y_start);
 
-    for(unsigned int i = 0; i < group_ptr -> x_group_size - x_start; i++){
-        for(unsigned int j = 0; j < group_ptr -> y_group_size - y_start; j++){
-            COORDVAL(new_block, x_size, i - x_offset, j - y_offset) = COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x_start + i, x_start + j);
+    for(unsigned int i = 0; i < x_size; i++){
+        for(unsigned int j = 0; j < y_size; j++){
+            //printf("[%d][%d]\n", i, j);
+            COORDVAL(new_block, x_size + 2, i + 1, j + 1) = COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x_start + i, y_start + j);
         }
     }
 
     free(group_ptr -> group_block);
     group_ptr -> group_block = new_block;
-    group_ptr -> x_group_size = x_size;
-    group_ptr -> y_group_size = y_size;
+    group_ptr -> x_group_size = x_size + 2;
+    group_ptr -> y_group_size = y_size + 2;
     group_ptr -> group_coord.x = x_coord_new;
     group_ptr -> group_coord.y = y_coord_new;
 
