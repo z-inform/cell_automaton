@@ -39,6 +39,7 @@ void field_free(Field* field_ptr){
 
 int group_step(Group* group_ptr){
     uint8_t* new_state = calloc(group_ptr -> x_group_size * group_ptr -> x_group_size, 1);
+
     for(unsigned int i = 0; i < group_ptr -> x_group_size; i++){
         for(unsigned int j = 0; j < group_ptr -> y_group_size; j++){
             switch (neighbour_count(group_ptr, i, j)) {
@@ -46,6 +47,7 @@ int group_step(Group* group_ptr){
                     COORDVAL(new_state, group_ptr -> x_group_size, i, j) = 1;
                     break;
                 case 2 :
+                    COORDVAL(new_state, group_ptr -> x_group_size, i, j) = COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, i, j);
                     break;
                 default :
                     COORDVAL(new_state, group_ptr -> x_group_size, i, j) = 0;
@@ -240,28 +242,24 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
 int neighbour_count(Group* group_ptr, unsigned int x, unsigned int y){
     uint8_t count = 0;
 
-	if (x != group_ptr -> x_group_size) {
-        for(char i = -1; i <= 1; i++) {
+	if (x != group_ptr -> x_group_size - 1) {
+        for(char i = ((y == 0) ? (0) : (-1)); i <= ((y == group_ptr -> y_group_size - 1) ? (0) : (1)); i++) {
             count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x + 1, y + i);
         }
     }
 
     if (x != 0) {
-        for(char i = -1; i <= 1; i++) {
+        for(char i = ((y == 0) ? (0) : (-1)); i <= ((y == group_ptr -> y_group_size - 1) ? (0) : (1)); i++) {
             count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x - 1, y + i);
         }
     }
 
-    if (y != group_ptr -> y_group_size) {
-        for(char i = -1; i <= 1; i++) {
-            count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x + i, y + 1);
-        }
+    if (y != group_ptr -> y_group_size - 1) {
+        count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x, y + 1);
     }
 
     if (y != 0) {
-        for(char i = -1; i <= 1; i++) {
-            count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x + i, y - 1);
-        }
+        count += COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x, y - 1);
     }
 
     return count;
