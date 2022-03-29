@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -I./$(INCLDIR) -fsanitize=address -g -O0
+CFLAGS = -Wall -Wextra -I./$(INCLDIR) -g -O0 -fsanitize=address
 
 PROG = $(BUILDDIR)/cell.elf
 MODULES = field main
