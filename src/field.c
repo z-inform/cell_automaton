@@ -10,12 +10,10 @@
 int neighbour_count(Group* group_ptr, unsigned int x, unsigned int y);
 int row_cells(Group* group_ptr, unsigned int y);
 int column_cells(Group* group_ptr, unsigned int x);
-field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y); 
 Group* find_cell_group(Field* field_ptr, int x, int y);
 uint8_t global_cell_status(Field* field_ptr, int x, int y);
 int global_neighbour_count(Field* field_ptr, int x, int y);
 int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group);
-int group_merge(field_node* cur_node, field_node* other_node);
 field_node* check_intersections(Field* field_ptr, field_node* cur_node);
 
 void field_free(Field* field_ptr){
@@ -24,14 +22,13 @@ void field_free(Field* field_ptr){
 
     for(int i = 0; cur_node -> next != NULL; i++){
         free(cur_node -> group_ptr -> group_block);
+        free(cur_node -> group_ptr);
         cur_node = cur_node -> next;
         free(cur_node -> prev);    
     }
 
     free(cur_node -> group_ptr -> group_block);
     free(cur_node -> group_ptr);
-    if (cur_node -> prev != NULL)
-        free(cur_node -> prev);    
 
     free(cur_node);
 
@@ -189,13 +186,23 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
     Group* first_group = first_node -> group_ptr;
     Group* second_group = second_node -> group_ptr;
 
-    first_group -> x_group_size = (x) ? (x) : (group_ptr -> x_group_size);
-    first_group -> y_group_size = (y) ? (y) : (group_ptr -> y_group_size);
+    first_group -> x_group_size = (x != 0) ? (x) : (group_ptr -> x_group_size);
+    first_group -> y_group_size = (y != 0) ? (y) : (group_ptr -> y_group_size);
     first_group -> group_block = calloc(first_group -> x_group_size * first_group -> y_group_size, 1);
 
-    second_group -> x_group_size = (x) ? (group_ptr -> x_group_size - x - 1) : (group_ptr -> x_group_size);
-    second_group -> y_group_size = (y) ? (group_ptr -> y_group_size - y - 1) : (group_ptr -> y_group_size);
+    first_group -> group_coord.x = group_ptr -> group_coord.x;
+    first_group -> group_coord.y = group_ptr -> group_coord.y;
+
+    second_group -> x_group_size = (x != 0) ? (group_ptr -> x_group_size - x - 1) : (group_ptr -> x_group_size);
+    second_group -> y_group_size = (y != 0) ? (group_ptr -> y_group_size - y - 1) : (group_ptr -> y_group_size);
     second_group -> group_block = calloc(second_group -> x_group_size * second_group -> y_group_size, 1);
+
+    second_group -> group_coord.x = group_ptr -> group_coord.x;
+    if (x != 0)
+        second_group -> group_coord.x += x + 1;
+    second_group -> group_coord.y = group_ptr -> group_coord.y;
+    if (y != 0)
+        second_group -> group_coord.y += y + 1;
 
     if (y == 0) { //split on a column
         for (unsigned int i = 0; i < x; i++) {
@@ -481,15 +488,15 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
 
     field_node* cur_node = field_ptr[0];
     
-    while (cur_node != NULL) {
+    while (1) {
         
         Group* cur_group = cur_node -> group_ptr;
 
-        for (unsigned int x = 0; x < cur_group -> x_group_size; x++) {
+        for (unsigned int x = 1; x < cur_group -> x_group_size - 2; x++) {
 
-            if (column_cells(cur_group, x) != 0) { //check for an empty column
+            if (column_cells(cur_group, x) == 0) { //check for an empty column
                 uint8_t flag = 0;
-                for (unsigned int y = 0; y < cur_group -> y_group_size; y++) { //if empty, check if any cell will be born
+                for (unsigned int y = 0; y < cur_group -> y_group_size - 1; y++) { //if empty, check if any cell will be born
                     if (neighbour_count(cur_group, x, y) == 3){ //if there are such cells...
                         flag = 1;
                         break;
@@ -500,14 +507,15 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
             }
 
             cur_node = group_split(cur_node, x, 0);
+            cur_group = cur_node -> group_ptr;
 
         }
 
-        for (unsigned int y = 0; y < cur_group -> y_group_size; y++) {
+        for (unsigned int y = 1; y < cur_group -> y_group_size - 2; y++) {
 
-            if (row_cells(cur_group, y) != 0) { //check for an empty row
+            if (row_cells(cur_group, y) == 0) { //check for an empty row
                 uint8_t flag = 0;
-                for (unsigned int x = 0; x < cur_group -> x_group_size; x++) { //if empty, check if any cell will be born
+                for (unsigned int x = 0; x < cur_group -> x_group_size - 1; x++) { //if empty, check if any cell will be born
                     if (neighbour_count(cur_group, x, y) == 3){ //if there are such cells...
                         flag = 1;
                         break;
@@ -518,12 +526,22 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
             }
 
             cur_node = group_split(cur_node, 0, y);
+            cur_group = cur_node -> group_ptr;
 
         }
 
+        if (cur_node -> next == NULL)
+            break;
+
         cur_node = cur_node -> next;
     }
+
+    while (cur_node -> prev != NULL){
+        cur_node = cur_node -> prev;
+    }
     
+    field_ptr[0] = cur_node;
+
     return 0;
 }
 
