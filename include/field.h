@@ -41,5 +41,5 @@ int field_split(Field* field_ptr);
 int field_merge(Field* field_ptr);
 int group_step(Group* group_ptr); 
 int group_resize(Group* group_ptr);
-field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y); 
-field_node* group_merge(field_node* cur_node, field_node* other_node);
+field_node* group_split(Field* field_ptr, field_node* node_ptr, unsigned int x, unsigned int y); 
+field_node* group_merge(Field* field_ptr, field_node* cur_node, field_node* other_node);

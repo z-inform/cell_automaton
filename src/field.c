@@ -160,7 +160,7 @@ int group_resize(Group* group_ptr){
     return 0;
 }
 
-field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
+field_node* group_split(Field* field_ptr, field_node* node_ptr, unsigned int x, unsigned int y){
     Group* group_ptr = node_ptr -> group_ptr;
     field_node* first_node = malloc(sizeof(field_node));
     field_node* second_node = malloc(sizeof(field_node));
@@ -225,6 +225,11 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
         group_resize(first_group);
         group_resize(second_group);
 
+        while (first_node -> prev != NULL)
+            first_node = first_node -> prev;
+
+        field_ptr[0] = first_node;
+
         return first_node;
 
     }
@@ -249,6 +254,11 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
 
         group_resize(first_group);
         group_resize(second_group);
+
+        while (first_node -> prev != NULL)
+            first_node = first_node -> prev;
+
+        field_ptr[0] = first_node;
 
         return first_node;
 
@@ -412,12 +422,13 @@ field_node* check_intersections(Field* field_ptr, field_node* cur_node){
     while (iter_node != NULL) {
         if ((iter_node != cur_node) && check_common_borders(field_ptr, cur_node -> group_ptr, iter_node -> group_ptr))
             return iter_node;
+        iter_node = iter_node -> next;
     }
 
     return NULL;
 }
 
-field_node* group_merge(field_node* cur_node, field_node* other_node){
+field_node* group_merge(Field* field_ptr, field_node* cur_node, field_node* other_node){
     Group* cur_group = cur_node -> group_ptr;
     Group* other_group = other_node -> group_ptr;
 
@@ -436,9 +447,22 @@ field_node* group_merge(field_node* cur_node, field_node* other_node){
     Group* new_group = malloc(sizeof(Group));
 
     field_node* new_node = malloc(sizeof(field_node));
-    new_node -> prev = cur_node -> prev;
-    new_node -> next = other_node -> next;
+    new_node -> prev = cur_node -> prev;//put new node in place of cur_node
+    new_node -> next = cur_node -> next;
     new_node -> group_ptr = new_group;
+
+    if (cur_node -> prev != NULL) //remove cur_node from the list
+        cur_node -> prev -> next = new_node;
+    
+    if (cur_node -> next != NULL)
+        cur_node -> next -> prev = new_node;
+
+    if (other_node -> prev != NULL) //remove other_node from the list
+        other_node -> prev -> next = other_node -> next;
+    
+    if (other_node -> next != NULL)
+        other_node -> next -> prev = other_node -> prev;
+
 
     new_group -> group_coord = new_coord;
     new_group -> x_group_size = x_size;
@@ -467,41 +491,31 @@ field_node* group_merge(field_node* cur_node, field_node* other_node){
     free(other_group);
     free(other_node);
 
-    return new_node;
+    cur_node = new_node;
+    while (new_node -> prev != NULL)
+        new_node = new_node -> prev;
+
+    field_ptr[0] = new_node;
+
+    return cur_node;
 }
 
 int field_merge(Field* field_ptr){
-      field_node* cur_node = field_ptr[0];
+    field_node* cur_node = field_ptr[0];
       
-      while (cur_node != NULL) {
-          Group* cur_group = cur_node -> group_ptr;  
-          field_node* other_node = cur_node -> next;
-          
-          while (other_node != NULL) {
-              Group* other_group = other_node -> group_ptr;
-              
-              if (check_common_borders(field_ptr, cur_group, other_group)){ //checks by coord first; by cell activity if needed
-                  group_merge(cur_node, other_node);
-                  while (1) {
-                      other_node = check_intersections(field_ptr, cur_node);
-                      if (other_node == NULL)
-                          break;
-                      group_merge(cur_node, other_node);
-                  }                
-              }
+    while (cur_node != NULL) {
 
-              other_node = other_node -> next;
-          }
+        while (1) {
+            field_node* other_node = check_intersections(field_ptr, cur_node); 
+            if (other_node == NULL)
+                break;
+            cur_node = group_merge(field_ptr, cur_node, other_node);
+        }
 
-          cur_node = cur_node -> next;
-      }
+        cur_node = cur_node -> next;
+    }
 
-      while (cur_node -> prev != NULL)
-          cur_node = cur_node -> prev;
-
-      field_ptr[0] = cur_node;
-      
-      return 0;
+    return 0;
 }
 
 int field_split(Field* field_ptr){ //might be place for optimizations (in cur_node assignment)
@@ -526,7 +540,7 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
                 if (flag) 
                     continue; //...skip the column
 
-                cur_node = group_split(cur_node, x, 0);
+                cur_node = group_split(field_ptr, cur_node, x, 0);
                 //printf("split on x = %d\n", x);
             
             }
@@ -548,7 +562,7 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
                 if (flag) 
                     continue; //...skip the row
 
-                cur_node = group_split(cur_node, 0, y);
+                cur_node = group_split(field_ptr, cur_node, 0, y);
                 //printf("split on y = %d\n", y);
             }
 
