@@ -221,6 +221,9 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
         free(group_ptr);
         free(node_ptr);
 
+        group_resize(first_group);
+        group_resize(second_group);
+
         return first_node;
 
     }
@@ -237,10 +240,14 @@ field_node* group_split(field_node* node_ptr, unsigned int x, unsigned int y){
                 COORDVAL(second_group -> group_block, second_group -> x_group_size, i, j - y - 1) = COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, i, j);
             }
         }
+
         
         free(group_ptr -> group_block);
         free(group_ptr);
         free(node_ptr);
+
+        group_resize(first_group);
+        group_resize(second_group);
 
         return first_node;
 
@@ -494,6 +501,7 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
 
         for (unsigned int x = 1; x < cur_group -> x_group_size - 2; x++) {
 
+
             if (column_cells(cur_group, x) == 0) { //check for an empty column
                 uint8_t flag = 0;
                 for (unsigned int y = 0; y < cur_group -> y_group_size - 1; y++) { //if empty, check if any cell will be born
@@ -504,9 +512,12 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
                 }
                 if (flag) 
                     continue; //...skip the column
+
+                cur_node = group_split(cur_node, x, 0);
+                //printf("split on x = %d\n", x);
+            
             }
 
-            cur_node = group_split(cur_node, x, 0);
             cur_group = cur_node -> group_ptr;
 
         }
@@ -523,9 +534,11 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
                 }
                 if (flag) 
                     continue; //...skip the row
+
+                cur_node = group_split(cur_node, 0, y);
+                //printf("split on y = %d\n", y);
             }
 
-            cur_node = group_split(cur_node, 0, y);
             cur_group = cur_node -> group_ptr;
 
         }
