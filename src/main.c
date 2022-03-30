@@ -37,11 +37,14 @@ int main(){
     printf("post resize: \n");
     group_dump(field -> group_ptr);
 
-    //field = group_split(field, 3, 0);
     field_split(&field);
-
     printf("\n SPLIT \n\n");
     field_dump(&field);
+
+    field = group_merge(field, field -> next);
+    printf("\n MERGE \n\n");
+    field_dump(&field);
+
 
     //group_step(field -> group_ptr);
     //printf("after group step: \n");

@@ -55,6 +55,7 @@ int group_step(Group* group_ptr){
 
     free(group_ptr -> group_block);
     group_ptr -> group_block = new_state;
+    group_resize(group_ptr);
 
     return 0;
 }
@@ -345,23 +346,28 @@ int global_neighbour_count(Field* field_ptr, int x, int y){
 //------------Field split/merge---------------
 
 int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group){
-    if ((other_group -> group_coord.x > (cur_group -> group_coord.x + (int) cur_group -> x_group_size + 1)) || //other is too far right
-        (other_group -> group_coord.y > (cur_group -> group_coord.y + (int) cur_group -> y_group_size + 1)) || //other is too far up
-        (cur_group -> group_coord.x > (other_group -> group_coord.x + (int) other_group -> x_group_size + 1)) || //cur is too far right
-        (cur_group -> group_coord.y > (other_group -> group_coord.y + (int) other_group -> y_group_size + 1))) { //cur is too far up
+    //when borders are just touching it is fine, all groups are already resized, no need to merge
+    if ((other_group -> group_coord.x >= (cur_group -> group_coord.x + (int) cur_group -> x_group_size)) || //other is too far right
+        (other_group -> group_coord.y >= (cur_group -> group_coord.y + (int) cur_group -> y_group_size)) || //other is too far up
+        (cur_group -> group_coord.x >= (other_group -> group_coord.x + (int) other_group -> x_group_size)) || //cur is too far right
+        (cur_group -> group_coord.y >= (other_group -> group_coord.y + (int) other_group -> y_group_size))) { //cur is too far up
         return 0;   
     }
 
-    if ((other_group -> group_coord.x < (cur_group -> group_coord.x + (int) cur_group -> x_group_size)) || //the opposite to previous checks
-        (other_group -> group_coord.y < (cur_group -> group_coord.y + (int) cur_group -> y_group_size)) || 
-        (cur_group -> group_coord.x < (other_group -> group_coord.x + (int) other_group -> x_group_size)) || 
-        (cur_group -> group_coord.y < (other_group -> group_coord.y + (int) other_group -> y_group_size))) { 
+    //if groups are intersecting by 2 or mode colums/rows - certainly merge
+    if ((other_group -> group_coord.x < (cur_group -> group_coord.x + (int) cur_group -> x_group_size - 1)) || //the opposite to previous checks
+        (other_group -> group_coord.y < (cur_group -> group_coord.y + (int) cur_group -> y_group_size - 1)) || 
+        (cur_group -> group_coord.x < (other_group -> group_coord.x + (int) other_group -> x_group_size - 1)) || 
+        (cur_group -> group_coord.y < (other_group -> group_coord.y + (int) other_group -> y_group_size - 1))) { 
         return 1;   
     }
 
     //and now for the hard part
+    //if just the borders overlap, merge only if there will be alive cells in next generation
+    //otherwise the groups are considered separate as the do not affect each other
+    //i.e. two 2x2 sqares with a 1-cell gap
     
-    if (other_group -> group_coord.x == (cur_group -> group_coord.x + (int) cur_group -> x_group_size + 1)) { //other on the right
+    if (other_group -> group_coord.x == (cur_group -> group_coord.x + (int) cur_group -> x_group_size - 1)) { //other on the right
         int start = MAX(other_group -> group_coord.y, cur_group -> group_coord.y);
         int end = MIN(other_group -> group_coord.y + (int) other_group -> y_group_size, cur_group -> group_coord.y + (int) cur_group -> y_group_size);
         for (int y = start; y < end; y++) {
@@ -370,7 +376,7 @@ int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group)
         }
     }
 
-    if (cur_group -> group_coord.x == (other_group -> group_coord.x + (int) other_group -> x_group_size + 1)) { //cur on the right
+    if (cur_group -> group_coord.x == (other_group -> group_coord.x + (int) other_group -> x_group_size - 1)) { //cur on the right
         int start = MAX(other_group -> group_coord.y, cur_group -> group_coord.y);
         int end = MIN(other_group -> group_coord.y + (int) other_group -> y_group_size, cur_group -> group_coord.y + (int) cur_group -> y_group_size);
         for (int y = start; y < end; y++) {
@@ -379,7 +385,7 @@ int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group)
         }
     }
 
-    if (other_group -> group_coord.y == (cur_group -> group_coord.y + (int) cur_group -> y_group_size + 1)) { //other on top
+    if (other_group -> group_coord.y == (cur_group -> group_coord.y + (int) cur_group -> y_group_size - 1)) { //other on top
         int start = MAX(other_group -> group_coord.x, cur_group -> group_coord.x);
         int end = MIN(other_group -> group_coord.x + (int) other_group -> x_group_size, cur_group -> group_coord.x + (int) cur_group -> x_group_size);
         for (int x = start; x < end; x++) {
@@ -388,7 +394,7 @@ int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group)
         }
     }
 
-    if (cur_group -> group_coord.y == (other_group -> group_coord.y + (int) other_group -> y_group_size + 1)) { //cur on top
+    if (cur_group -> group_coord.y == (other_group -> group_coord.y + (int) other_group -> y_group_size - 1)) { //cur on top
         int start = MAX(other_group -> group_coord.x, cur_group -> group_coord.x);
         int end = MIN(other_group -> group_coord.x + (int) other_group -> x_group_size, cur_group -> group_coord.x + (int) cur_group -> x_group_size);
         for (int x = start; x < end; x++) {
@@ -411,7 +417,7 @@ field_node* check_intersections(Field* field_ptr, field_node* cur_node){
     return NULL;
 }
 
-int group_merge(field_node* cur_node, field_node* other_node){
+field_node* group_merge(field_node* cur_node, field_node* other_node){
     Group* cur_group = cur_node -> group_ptr;
     Group* other_group = other_node -> group_ptr;
 
@@ -422,8 +428,10 @@ int group_merge(field_node* cur_node, field_node* other_node){
     new_coord.x = MIN(cur_group -> group_coord.x, other_group -> group_coord.x);
     new_coord.y = MIN(cur_group -> group_coord.y, other_group -> group_coord.y);
 
-    x_size = MAX(cur_group -> group_coord.x, other_group -> group_coord.x) - new_coord.x;
-    y_size = MAX(cur_group -> group_coord.y, other_group -> group_coord.y) - new_coord.y;
+    x_size = MAX(cur_group -> group_coord.x + cur_group -> x_group_size - 1, other_group -> group_coord.x + other_group -> x_group_size - 1) - new_coord.x + 1;
+    y_size = MAX(cur_group -> group_coord.y + cur_group -> y_group_size - 1, other_group -> group_coord.y + other_group -> y_group_size - 1) - new_coord.y + 1;
+
+    printf("xsize = %d; ysize = %d\n", x_size, y_size);
 
     Group* new_group = malloc(sizeof(Group));
 
@@ -440,14 +448,14 @@ int group_merge(field_node* cur_node, field_node* other_node){
     for (unsigned int x = 0; x < (cur_group -> x_group_size); x++) {
         for (unsigned int y = 0; y < (cur_group -> y_group_size); y++) {
             COORDVAL(new_group -> group_block, x_size, x + (unsigned int) (cur_group -> group_coord.x - new_coord.x), y + (unsigned int) (cur_group -> group_coord.y - new_coord.y)) = 
-                COORDVAL(cur_group, cur_group -> x_group_size, x, y);
+                COORDVAL(cur_group -> group_block, cur_group -> x_group_size, x, y);
         }
     }
 
     for (unsigned int x = 0; x < (other_group -> x_group_size); x++) {
         for (unsigned int y = 0; y < (other_group -> y_group_size); y++) {
             COORDVAL(new_group -> group_block, x_size, x + (unsigned int) (other_group -> group_coord.x - new_coord.x), y + (unsigned int) (other_group -> group_coord.y - new_coord.y)) = 
-                COORDVAL(other_group, other_group -> x_group_size, x, y);
+                COORDVAL(other_group -> group_block, other_group -> x_group_size, x, y);
         }
     }
 
@@ -459,7 +467,7 @@ int group_merge(field_node* cur_node, field_node* other_node){
     free(other_group);
     free(other_node);
 
-    return 0;
+    return new_node;
 }
 
 int field_merge(Field* field_ptr){
@@ -487,6 +495,11 @@ int field_merge(Field* field_ptr){
 
           cur_node = cur_node -> next;
       }
+
+      while (cur_node -> prev != NULL)
+          cur_node = cur_node -> prev;
+
+      field_ptr[0] = cur_node;
       
       return 0;
 }
