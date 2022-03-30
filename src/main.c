@@ -23,27 +23,29 @@ int main(){
     field -> group_ptr -> y_group_size = YSIZE;
     field -> group_ptr -> group_block = calloc(XSIZE * YSIZE, 1);
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 0, 1 + i) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 1 + i) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 1, 1 + i) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4, 1 + i) = 1;
     }
 
-    //COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 0, 0) = 1;
     //COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4, 2) = 1;
 
     group_resize(field -> group_ptr);
     printf("post resize: \n");
     group_dump(field -> group_ptr);
 
-    field_split(&field);
-    printf("\n SPLIT \n\n");
-    field_dump(&field);
+    //field_split(&field);
+    //printf("\n SPLIT \n\n");
+    //field_dump(&field);
 
     //field = group_merge(field, field -> next);
-    field_merge(&field);
-    printf("\n MERGE \n\n");
+    //field_merge(&field);
+    //printf("\n MERGE \n\n");
+    field_step(&field);
+    field_step(&field);
+    printf("\n FIELD STEP \n");
     field_dump(&field);
 
     //group_step(field -> group_ptr);
