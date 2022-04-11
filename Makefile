@@ -1,8 +1,9 @@
-CC = gcc
+CC = g++
 CFLAGS = -Wall -Wextra -I./$(INCLDIR) -g -O0 -fsanitize=address
+LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 
 PROG = $(BUILDDIR)/cell.elf
-MODULES = field main
+MODULES = field main draw
 OBJ = $(addsuffix .o, $(MODULES))
 SRC = $(addsuffix .cpp, $(MODULES))
 
@@ -13,10 +14,10 @@ INCLDIR = include
 all : $(PROG)
 
 $(PROG) : $(addprefix $(BUILDDIR)/, $(OBJ))
-	    $(CC) $(CFLAGS) $^ -o $@
+		$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 $(addprefix $(BUILDDIR)/, $(OBJ)) : $(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCLDIR)/%.h
-	    $(CC) $(CFLAGS) -c $< -o $@
+		$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 	.PHONY: depend

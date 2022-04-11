@@ -35,7 +35,7 @@ void field_free(Field* field_ptr){
 }
 
 int group_step(Group* group_ptr){
-    uint8_t* new_state = calloc(group_ptr -> x_group_size * group_ptr -> x_group_size, 1);
+    uint8_t* new_state = (uint8_t*) calloc(group_ptr -> x_group_size * group_ptr -> x_group_size, 1);
 
     for(unsigned int i = 0; i < group_ptr -> x_group_size; i++){
         for(unsigned int j = 0; j < group_ptr -> y_group_size; j++){
@@ -162,8 +162,8 @@ int group_resize(Group* group_ptr){
 
 field_node* group_split(Field* field_ptr, field_node* node_ptr, unsigned int x, unsigned int y){
     Group* group_ptr = node_ptr -> group_ptr;
-    field_node* first_node = malloc(sizeof(field_node));
-    field_node* second_node = malloc(sizeof(field_node));
+    field_node* first_node = (field_node*) malloc(sizeof(field_node));
+    field_node* second_node = (field_node*) malloc(sizeof(field_node));
         
     //set up all the addresses
 
@@ -179,8 +179,8 @@ field_node* group_split(Field* field_ptr, field_node* node_ptr, unsigned int x, 
     second_node -> prev = first_node;
     second_node -> next = node_ptr -> next;
 
-    first_node -> group_ptr = malloc(sizeof(Group));
-    second_node -> group_ptr = malloc(sizeof(Group));
+    first_node -> group_ptr = (Group*) malloc(sizeof(Group));
+    second_node -> group_ptr = (Group*) malloc(sizeof(Group));
 
     //distribute block
     
@@ -444,9 +444,9 @@ field_node* group_merge(Field* field_ptr, field_node* cur_node, field_node* othe
 
     //printf("xsize = %d; ysize = %d\n", x_size, y_size);
 
-    Group* new_group = malloc(sizeof(Group));
+    Group* new_group = (Group*) malloc(sizeof(Group));
 
-    field_node* new_node = malloc(sizeof(field_node));
+    field_node* new_node = (field_node*) malloc(sizeof(field_node));
     new_node -> prev = cur_node -> prev;//put new node in place of cur_node
     new_node -> next = cur_node -> next;
     new_node -> group_ptr = new_group;

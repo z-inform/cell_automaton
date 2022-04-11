@@ -1,8 +1,10 @@
+#include <SFML/Graphics.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include "field.h"
+#include "draw.h"
 
-#define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + SX * (Y) + X))
+#define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + (SX) * (Y) + X))
 
 #define XSIZE 5u
 #define YSIZE 5u
@@ -13,10 +15,10 @@ void field_dump(Field* field_ptr);
 
 int main(){
 
-    field_node* field = malloc(sizeof(field_node));
+    field_node* field = (field_node*) malloc(sizeof(field_node));
     field -> prev = NULL;
     field -> next = NULL;
-    field -> group_ptr = malloc(sizeof(Group));
+    field -> group_ptr = (Group*) malloc(sizeof(Group));
     field -> group_ptr -> group_coord.x = 0;
     field -> group_ptr -> group_coord.y = 0;
     field -> group_ptr -> x_group_size = XSIZE;
@@ -30,30 +32,20 @@ int main(){
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4, 1 + i) = 1;
     }
 
-    //COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4, 2) = 1;
+    sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM");
 
-    group_resize(field -> group_ptr);
-    printf("post resize: \n");
-    group_dump(field -> group_ptr);
+    while (window.isOpen()) {
+        sf::Event event;
 
-    //field_split(&field);
-    //printf("\n SPLIT \n\n");
-    //field_dump(&field);
+        while (window.pollEvent(event))
+            if (event.type == sf::Event::Closed)
+                window.close();
+        
+        window.clear();
+        draw_field(window, &field);
+        window.display();
 
-    //field = group_merge(field, field -> next);
-    //field_merge(&field);
-    //printf("\n MERGE \n\n");
-    field_step(&field);
-    field_step(&field);
-    printf("\n FIELD STEP \n");
-    field_dump(&field);
-
-    //group_step(field -> group_ptr);
-    //printf("after group step: \n");
-    //group_dump(field -> group_ptr);
-    //group_resize(field -> group_ptr);
-    //printf("after group resize: \n");
-    //group_dump(field -> group_ptr);
+    }
 
     field_free(&field);
     return 0;
