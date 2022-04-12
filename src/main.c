@@ -25,7 +25,7 @@ int main(){
     field -> group_ptr -> y_group_size = YSIZE;
     field -> group_ptr -> group_block = calloc(XSIZE * YSIZE, 1);
 
-    // big oscillator, bugs out
+    // big oscillator
     for (int i = 0; i < 3; i++) {
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i, 4) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4 + i, 4) = 1;
@@ -52,19 +52,20 @@ int main(){
     group_resize(field -> group_ptr);
 
 
-    sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM");
+    sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM", sf::Style::Titlebar | sf::Style::Close);
 
     while (window.isOpen()) {
         sf::Event event;
+
 
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
 
             if (event.type == sf::Event::MouseButtonPressed) {
-                printf("NEW STEP\n");
+                //printf("NEW STEP\n");
                 field_step(&field);
-                field_dump(&field);
+                //field_dump(&field);
             }
         }
         
