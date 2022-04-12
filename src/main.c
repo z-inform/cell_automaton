@@ -25,20 +25,20 @@ int main(){
     field -> group_ptr -> y_group_size = YSIZE;
     field -> group_ptr -> group_block = calloc(XSIZE * YSIZE, 1);
 
-    /* big oscillator, bugs out
+    // big oscillator, bugs out
     for (int i = 0; i < 3; i++) {
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i, 4) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4 + i, 4) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, i) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 6 + i) = 1;
     }
-    */
 
-    // two oscillators
+    /* two oscillators
     for (int i = 0; i < 3; i++) {
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i, 1) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i + 4, 1) = 1;
     }
+    */
 
     /*
     for (int i = 0; i < 3; i++) {

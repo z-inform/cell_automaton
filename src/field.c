@@ -392,53 +392,12 @@ int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group)
         return 0;   
     }
 
-    //if groups are intersecting by 2 or mode colums/rows - certainly merge
-    if ((other_group -> group_coord.x < (cur_group -> group_coord.x + (int) cur_group -> x_group_size - 1)) || //the opposite to previous checks
-        (other_group -> group_coord.y < (cur_group -> group_coord.y + (int) cur_group -> y_group_size - 1)) || 
-        (cur_group -> group_coord.x < (other_group -> group_coord.x + (int) other_group -> x_group_size - 1)) || 
-        (cur_group -> group_coord.y < (other_group -> group_coord.y + (int) other_group -> y_group_size - 1))) { 
+    //if groups are intersecting by 1 or mode colums/rows - merge
+    if ((other_group -> group_coord.x <= (cur_group -> group_coord.x + (int) cur_group -> x_group_size - 1)) || //the opposite to previous checks
+        (other_group -> group_coord.y <= (cur_group -> group_coord.y + (int) cur_group -> y_group_size - 1)) || 
+        (cur_group -> group_coord.x <= (other_group -> group_coord.x + (int) other_group -> x_group_size - 1)) || 
+        (cur_group -> group_coord.y <= (other_group -> group_coord.y + (int) other_group -> y_group_size - 1))) { 
         return 1;   
-    }
-
-    //and now for the hard part
-    //if just the borders overlap, merge only if there will be alive cells in next generation
-    //otherwise the groups are considered separate as the do not affect each other
-    //i.e. two 2x2 sqares with a 1-cell gap
-    
-    if (other_group -> group_coord.x == (cur_group -> group_coord.x + (int) cur_group -> x_group_size - 1)) { //other on the right
-        int start = MAX(other_group -> group_coord.y, cur_group -> group_coord.y);
-        int end = MIN(other_group -> group_coord.y + (int) other_group -> y_group_size, cur_group -> group_coord.y + (int) cur_group -> y_group_size);
-        for (int y = start; y < end; y++) {
-            if (global_neighbour_count(field_ptr, other_group -> group_coord.x - 1, y) == 3)
-                return 1;
-        }
-    }
-
-    if (cur_group -> group_coord.x == (other_group -> group_coord.x + (int) other_group -> x_group_size - 1)) { //cur on the right
-        int start = MAX(other_group -> group_coord.y, cur_group -> group_coord.y);
-        int end = MIN(other_group -> group_coord.y + (int) other_group -> y_group_size, cur_group -> group_coord.y + (int) cur_group -> y_group_size);
-        for (int y = start; y < end; y++) {
-            if (global_neighbour_count(field_ptr, cur_group -> group_coord.x - 1, y) == 3)
-                return 1;
-        }
-    }
-
-    if (other_group -> group_coord.y == (cur_group -> group_coord.y + (int) cur_group -> y_group_size - 1)) { //other on top
-        int start = MAX(other_group -> group_coord.x, cur_group -> group_coord.x);
-        int end = MIN(other_group -> group_coord.x + (int) other_group -> x_group_size, cur_group -> group_coord.x + (int) cur_group -> x_group_size);
-        for (int x = start; x < end; x++) {
-            if (global_neighbour_count(field_ptr, x, other_group -> group_coord.y - 1) == 3)
-                return 1;
-        }
-    }
-
-    if (cur_group -> group_coord.y == (other_group -> group_coord.y + (int) other_group -> y_group_size - 1)) { //cur on top
-        int start = MAX(other_group -> group_coord.x, cur_group -> group_coord.x);
-        int end = MIN(other_group -> group_coord.x + (int) other_group -> x_group_size, cur_group -> group_coord.x + (int) cur_group -> x_group_size);
-        for (int x = start; x < end; x++) {
-            if (global_neighbour_count(field_ptr, x, cur_group -> group_coord.y - 1) == 3)
-                return 1;
-        }
     }
 
     return 0;
@@ -560,20 +519,9 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
         for (unsigned int x = 1; x < cur_group -> x_group_size - 2; x++) {
 
 
-            if (column_cells(cur_group, x) == 0) { //check for an empty column
-                uint8_t flag = 0;
-                for (unsigned int y = 0; y < cur_group -> y_group_size - 1; y++) { //if empty, check if any cell will be born
-                    if (neighbour_count(cur_group, x, y) == 3){ //if there are such cells...
-                        flag = 1;
-                        break;
-                    }
-                }
-                if (flag) 
-                    continue; //...skip the column
-
+            if ((column_cells(cur_group, x) == 0) && (column_cells(cur_group, x + 1) == 0)) { //check for an empty columns
                 cur_node = group_split(field_ptr, cur_node, x, 0);
                 //printf("split on x = %d\n", x);
-            
             }
 
             cur_group = cur_node -> group_ptr;
@@ -582,16 +530,7 @@ int field_split(Field* field_ptr){ //might be place for optimizations (in cur_no
 
         for (unsigned int y = 1; y < cur_group -> y_group_size - 2; y++) {
 
-            if (row_cells(cur_group, y) == 0) { //check for an empty row
-                uint8_t flag = 0;
-                for (unsigned int x = 0; x < cur_group -> x_group_size - 1; x++) { //if empty, check if any cell will be born
-                    if (neighbour_count(cur_group, x, y) == 3){ //if there are such cells...
-                        flag = 1;
-                        break;
-                    }
-                }
-                if (flag) 
-                    continue; //...skip the row
+            if ((row_cells(cur_group, y) == 0) && (row_cells(cur_group, y + 1) == 0)) { //check for an empty rows
 
                 cur_node = group_split(field_ptr, cur_node, 0, y);
                 //printf("split on y = %d\n", y);
