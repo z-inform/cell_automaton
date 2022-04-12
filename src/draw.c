@@ -18,6 +18,15 @@ int draw_cell(sf::RenderWindow &window, int x, int y){
 
 int draw_group(sf::RenderWindow &window, Group* group_ptr){
 
+    sf::RectangleShape outline;
+    outline.setSize(sf::Vector2f(group_ptr -> x_group_size * 12, group_ptr -> y_group_size * 12));
+    outline.setOutlineColor(sf::Color(128, 0, 0));
+    outline.setOutlineThickness(1);
+    outline.setFillColor(sf::Color::Transparent);
+    sf::Vector2u size = window.getSize();
+    outline.setPosition(size.x / 2 + (group_ptr -> group_coord.x) * 12, size.y / 2 + (group_ptr -> group_coord.y) * 12);
+    window.draw(outline);
+
     for (unsigned int x = 0; x < group_ptr -> x_group_size; x++) {
         for (unsigned int y = 0; y < group_ptr -> y_group_size; y++) {
             if (COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x, y))

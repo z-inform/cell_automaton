@@ -17,6 +17,9 @@ int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group)
 field_node* check_intersections(Field* field_ptr, field_node* cur_node);
 
 void field_free(Field* field_ptr){
+
+    if (field_ptr[0] == NULL)
+        return;
         
     field_node* cur_node = field_ptr[0];
 
@@ -35,7 +38,7 @@ void field_free(Field* field_ptr){
 }
 
 int group_step(Group* group_ptr){
-    uint8_t* new_state = (uint8_t*) calloc(group_ptr -> x_group_size * group_ptr -> x_group_size, 1);
+    uint8_t* new_state = (uint8_t*) calloc(group_ptr -> x_group_size * group_ptr -> y_group_size, 1);
 
     for(unsigned int i = 0; i < group_ptr -> x_group_size; i++){
         for(unsigned int j = 0; j < group_ptr -> y_group_size; j++){
@@ -55,19 +58,39 @@ int group_step(Group* group_ptr){
 
     free(group_ptr -> group_block);
     group_ptr -> group_block = new_state;
-    group_resize(group_ptr);
+    return group_resize(group_ptr);
 
-    return 0;
 }
 
 int field_step(Field* field_ptr){
 
     field_node* cur_node = field_ptr[0];
 
+    if (cur_node == NULL)
+        return -1;
+
     for(int i = 0; cur_node != NULL; i++){
-        group_step(cur_node -> group_ptr);
-        cur_node = cur_node -> next;
+        if (group_step(cur_node -> group_ptr) == 1) {
+            free(cur_node -> group_ptr -> group_block);
+            free(cur_node -> group_ptr);
+
+            if (cur_node -> next != NULL)
+                cur_node -> next -> prev = cur_node -> prev;
+            if (cur_node -> prev != NULL)
+                cur_node -> prev -> next = cur_node -> next;
+
+            field_node* to_free = cur_node;
+            if (cur_node == field_ptr[0]) 
+                *field_ptr = cur_node -> next;
+            cur_node = cur_node -> next;
+            free(to_free);
+        } else {
+            cur_node = cur_node -> next;
+        }
     }
+
+    if (field_ptr == NULL)
+        return -1;
 
     field_split(field_ptr);
     field_merge(field_ptr);
@@ -91,7 +114,7 @@ int group_resize(Group* group_ptr){
         y_size += 1;
         y_start -= 1;
     } else {
-        for(unsigned int i = 1; !row_cells(group_ptr, i); i++){ //cut empty rows from the bottom
+        for(unsigned int i = 1; (!row_cells(group_ptr, i)) && (y_size != 0); i++){ //cut empty rows from the bottom
             y_coord_new += 1;
             y_size -= 1;
             y_start += 1;
@@ -102,7 +125,7 @@ int group_resize(Group* group_ptr){
     if (row_cells(group_ptr, group_ptr -> y_group_size - 1)){ //if alive cells on upper group boundary expand upwards
         y_size += 1;
     } else {
-        for(unsigned int i = 1; !row_cells(group_ptr, group_ptr -> y_group_size - 1 - i); i++){ //cut empty rows from the top
+        for(unsigned int i = 1; (!row_cells(group_ptr, group_ptr -> y_group_size - 1 - i)) && (y_size != 0); i++){ //cut empty rows from the top
             y_size -= 1;
         }
     }
@@ -113,7 +136,7 @@ int group_resize(Group* group_ptr){
         x_size += 1;
         x_start -= 1;
     } else {
-        for(unsigned int i = 1; !column_cells(group_ptr, i); i++){ //cut empty rows from the left
+        for(unsigned int i = 1; (!column_cells(group_ptr, i)) && (x_size != 0); i++){ //cut empty rows from the left
             x_coord_new += 1;
             x_size -= 1;
             x_start += 1;
@@ -124,7 +147,7 @@ int group_resize(Group* group_ptr){
     if (column_cells(group_ptr, group_ptr -> x_group_size - 1)){ //if alive cells on right group boundary expand right
         x_size += 1;
     } else {
-        for(unsigned int i = 1; !column_cells(group_ptr, group_ptr -> x_group_size - 1 - i); i++){ //cut empty rows from the right
+        for(unsigned int i = 1; (!column_cells(group_ptr, group_ptr -> x_group_size - 1 - i)) && (x_size != 0); i++){ //cut empty rows from the right
             x_size -= 1;
         }
     }
@@ -137,6 +160,9 @@ int group_resize(Group* group_ptr){
          (y_size == group_ptr -> y_group_size - 2)){
         return 0;
     }
+
+    if ((x_size == 0) || (y_size == 0)) 
+        return 1;
 
     void* new_block = calloc((x_size + 2) * (y_size + 2), 1);
 
@@ -323,12 +349,14 @@ Group* find_cell_group(Field* field_ptr, int x, int y){
         if ((x < target_group -> group_coord.x) || 
             (y < target_group -> group_coord.y) ||
             (x > (target_group -> group_coord.x + (int) target_group -> x_group_size)) ||
-            (y > (target_group -> group_coord.y + (int) target_group -> y_group_size)))
+            (y > (target_group -> group_coord.y + (int) target_group -> y_group_size))) {
+
+            cur_node = cur_node -> next;
             continue;
+        }
 
         return target_group;
 
-        cur_node = cur_node -> next;
     }
 
     return NULL;
@@ -519,6 +547,9 @@ int field_merge(Field* field_ptr){
 }
 
 int field_split(Field* field_ptr){ //might be place for optimizations (in cur_node assignment)
+
+    if ((field_ptr == NULL) || (field_ptr[0] == NULL)) 
+        return -1;
 
     field_node* cur_node = field_ptr[0];
     
