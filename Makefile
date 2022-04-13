@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -I./$(INCLDIR) -g -O0 -fsanitize=address
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 
 PROG = $(BUILDDIR)/cell.elf
-MODULES = field main draw
+MODULES = field main draw generator
 OBJ = $(addsuffix .o, $(MODULES))
 SRC = $(addsuffix .cpp, $(MODULES))
 

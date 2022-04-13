@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "field.h"
 #include "draw.h"
+#include "generator.h"
 
 #define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + (SX) * (Y) + X))
 
@@ -27,7 +28,6 @@ int main(){
     field -> group_ptr -> y_group_size = YSIZE;
     field -> group_ptr -> group_block = calloc(XSIZE * YSIZE, 1);
 
-    // big oscillator
     for (int i = 0; i < 3; i++) {
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i, 4) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4 + i, 4) = 1;
@@ -35,21 +35,6 @@ int main(){
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 6 + i) = 1;
     }
 
-    /* two oscillators
-    for (int i = 0; i < 3; i++) {
-        COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i, 1) = 1;
-        COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i + 4, 1) = 1;
-    }
-    */
-
-    /*
-    for (int i = 0; i < 3; i++) {
-        COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 2, 5 + i) = 1;
-    }
-    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 1, 2) = 1;
-    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 2, 1) = 1;
-    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 2) = 1;
-    */
 
     group_resize(field -> group_ptr);
 
@@ -67,16 +52,55 @@ int main(){
                 window.close();
 
             if (event.type == sf::Event::MouseButtonPressed) {
-                field_step(&field);
+                sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
+                coord_pair coord; //coord of cell under cursor
+                coord.x = (mouse_pos.x - window.getSize().x / 2) / 12;
+                coord.y = (mouse_pos.y - window.getSize().y / 2) / 12;
+                Group* group_ptr = find_cell_group(&field, coord.x, coord.y);
+                if (group_ptr == NULL) { //check if group with this cell exists
+                    group_ptr = (Group*) malloc(sizeof(Group)); //create a group if not
+                    group_ptr -> group_coord.x = coord.x - 1;
+                    group_ptr -> group_coord.y = coord.y - 1;
+                    group_ptr -> x_group_size = 3;
+                    group_ptr -> y_group_size = 3;
+                    group_ptr -> group_block = calloc(9, 1);
+                    COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, 1, 1) = 1;
+                    add_group(&field, group_ptr);
+                    field_merge(&field);
+                    field_split(&field);
+                } else { //if exists just toggle the cell
+                    COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, coord.x - group_ptr -> group_coord.x, coord.y - group_ptr -> group_coord.y) =
+                        !COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, coord.x - group_ptr -> group_coord.x, coord.y - group_ptr -> group_coord.y);
+                    if (group_resize(group_ptr) == 1)
+                        remove_group(&field, group_ptr);
+                    field_merge(&field);
+                    field_split(&field);
+                }
             }
+
+            if (event.type == sf::Event::KeyPressed) {
+                switch (event.key.code) {
+                    case (sf::Keyboard::Enter):
+                        break;
+
+                    case (sf::Keyboard::Q):
+                        window.close();
+                        break;
+             
+                    case (sf::Keyboard::C):
+                        field_free(&field);
+                        break;
+                }
+            }
+
         }
 
-        if ((sf::Mouse::isButtonPressed(sf::Mouse::Left) && (clock.getElapsedTime().asMilliseconds() - time > 300)) ||
-            (sf::Mouse::isButtonPressed(sf::Mouse::Right) && (clock.getElapsedTime().asMilliseconds() - time > 100))) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && (clock.getElapsedTime().asMilliseconds() - time > 300)) {
             field_step(&field);
             time = clock.getElapsedTime().asMilliseconds();
         }
-        
+
+
         window.clear();
         draw_field(window, &field);
         window.display();

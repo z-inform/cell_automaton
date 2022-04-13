@@ -10,7 +10,6 @@
 int neighbour_count(Group* group_ptr, unsigned int x, unsigned int y);
 int row_cells(Group* group_ptr, unsigned int y);
 int column_cells(Group* group_ptr, unsigned int x);
-Group* find_cell_group(Field* field_ptr, int x, int y);
 uint8_t global_cell_status(Field* field_ptr, int x, int y);
 int global_neighbour_count(Field* field_ptr, int x, int y);
 int check_common_borders(Field* field_ptr, Group* cur_group, Group* other_group);
@@ -35,6 +34,7 @@ void field_free(Field* field_ptr){
 
     free(cur_node);
 
+    field_ptr[0] = NULL;
 }
 
 int group_step(Group* group_ptr){

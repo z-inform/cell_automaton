@@ -38,6 +38,8 @@ int draw_group(sf::RenderWindow &window, Group* group_ptr){
 }
 
 int draw_field(sf::RenderWindow &window, Field* field_ptr){
+    if ((field_ptr == NULL) || (field_ptr[0] == NULL))
+        return -1;
     field_node* cur_node = field_ptr[0];
 
     while (cur_node != NULL) {
