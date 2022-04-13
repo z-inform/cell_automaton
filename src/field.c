@@ -1,11 +1,12 @@
-#include "field.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
+#include "field.h"
+#include "draw.h"
 
 #define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + (SX) * (Y) + X))
-#define MAX(X, Y) ((X > Y) ? (X) : (Y))
-#define MIN(X, Y) ((X < Y) ? (X) : (Y))
+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 int neighbour_count(Group* group_ptr, unsigned int x, unsigned int y);
 int row_cells(Group* group_ptr, unsigned int y);
@@ -344,18 +345,16 @@ Group* find_cell_group(Field* field_ptr, int x, int y){
     field_node* cur_node = field_ptr[0];
     Group* target_group = NULL;
 
-    for(int i = 0; cur_node != NULL; i++){
+    while (cur_node != NULL) {
+
         target_group = cur_node -> group_ptr;
-        if ((x < target_group -> group_coord.x) || 
-            (y < target_group -> group_coord.y) ||
-            (x > (target_group -> group_coord.x + (int) target_group -> x_group_size)) ||
-            (y > (target_group -> group_coord.y + (int) target_group -> y_group_size))) {
+        if ((x >= target_group -> group_coord.x) &&
+            (x < target_group -> group_coord.x + (int) target_group -> x_group_size) &&
+            (y >= target_group -> group_coord.y) &&
+            (y < target_group -> group_coord.y + (int) target_group -> y_group_size))
+            return target_group;
 
-            cur_node = cur_node -> next;
-            continue;
-        }
-
-        return target_group;
+        cur_node = cur_node -> next;
 
     }
 
@@ -426,8 +425,8 @@ field_node* group_merge(Field* field_ptr, field_node* cur_node, field_node* othe
     new_coord.x = MIN(cur_group -> group_coord.x, other_group -> group_coord.x);
     new_coord.y = MIN(cur_group -> group_coord.y, other_group -> group_coord.y);
 
-    x_size = MAX(cur_group -> group_coord.x + cur_group -> x_group_size - 1, other_group -> group_coord.x + other_group -> x_group_size - 1) - new_coord.x + 1;
-    y_size = MAX(cur_group -> group_coord.y + cur_group -> y_group_size - 1, other_group -> group_coord.y + other_group -> y_group_size - 1) - new_coord.y + 1;
+    x_size = (MAX(cur_group -> group_coord.x + (int) cur_group -> x_group_size, other_group -> group_coord.x + (int) other_group -> x_group_size)) - new_coord.x;
+    y_size = (MAX(cur_group -> group_coord.y + (int) cur_group -> y_group_size, other_group -> group_coord.y + (int) other_group -> y_group_size)) - new_coord.y;
 
     //printf("xsize = %d; ysize = %d\n", x_size, y_size);
 
@@ -455,6 +454,12 @@ field_node* group_merge(Field* field_ptr, field_node* cur_node, field_node* othe
     new_group -> x_group_size = x_size;
     new_group -> y_group_size = y_size;
     new_group -> group_block = calloc(x_size * y_size, 1);
+
+    //debug dumps
+    group_dump(cur_group);
+    group_dump(other_group);
+    printf("xsize = %d; ysize = %d\n", x_size, y_size);
+    printf("new x = %d; new y = %d\n", new_coord.x, new_coord.y);
 
     for (unsigned int x = 0; x < (cur_group -> x_group_size); x++) {
         for (unsigned int y = 0; y < (cur_group -> y_group_size); y++) {

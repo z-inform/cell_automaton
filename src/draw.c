@@ -10,8 +10,8 @@ int draw_cell(sf::RenderWindow &window, int x, int y){
     cell_rect.setSize(sf::Vector2f(12, 12));
     cell_rect.setOutlineColor(sf::Color(0, 0, 0));
     cell_rect.setOutlineThickness(-0.5);
-    sf::Vector2u size = window.getSize();
-    cell_rect.setPosition(size.x / 2 + x * 12, size.y / 2 + y * 12);
+    //sf::Vector2u size = window.getSize();
+    cell_rect.setPosition(x * 12, y * 12);
     window.draw(cell_rect);
     return 0;
 }
@@ -23,8 +23,7 @@ int draw_group(sf::RenderWindow &window, Group* group_ptr){
     outline.setOutlineColor(sf::Color(128, 0, 0));
     outline.setOutlineThickness(1);
     outline.setFillColor(sf::Color::Transparent);
-    sf::Vector2u size = window.getSize();
-    outline.setPosition(size.x / 2 + (group_ptr -> group_coord.x) * 12, size.y / 2 + (group_ptr -> group_coord.y) * 12);
+    outline.setPosition((group_ptr -> group_coord.x) * 12,(group_ptr -> group_coord.y) * 12);
     window.draw(outline);
 
     for (unsigned int x = 0; x < group_ptr -> x_group_size; x++) {
@@ -50,4 +49,24 @@ int draw_field(sf::RenderWindow &window, Field* field_ptr){
     return 0;
 }
 
+void group_dump(Group* group_ptr){
+    printf("global coord [%d][%d]\n", group_ptr -> group_coord.x, group_ptr -> group_coord.y);
+    printf("size %d x %d\n", group_ptr -> x_group_size, group_ptr -> y_group_size);
+    for (int y = (int) group_ptr -> y_group_size - 1; y >= 0;  y--) {
+        for (unsigned int x = 0; x < group_ptr -> x_group_size; x++)
+            printf("[%hhu]", COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x, y));
+        printf("\n");
+    }
+}
+
+void field_dump(Field* field_ptr){
+    field_node* cur_node = field_ptr[0];
+    while (cur_node != NULL) {
+        
+        group_dump(cur_node -> group_ptr);
+        printf("\n");
+
+        cur_node = cur_node -> next;
+    }
+}
 
