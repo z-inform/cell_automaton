@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "field.h"
 #include "draw.h"
 
@@ -53,6 +55,8 @@ int main(){
 
 
     sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM", sf::Style::Titlebar | sf::Style::Close);
+    sf::Clock clock;
+    int64_t time = clock.getElapsedTime().asMilliseconds();
 
     while (window.isOpen()) {
         sf::Event event;
@@ -63,10 +67,14 @@ int main(){
                 window.close();
 
             if (event.type == sf::Event::MouseButtonPressed) {
-                //printf("NEW STEP\n");
                 field_step(&field);
-                //field_dump(&field);
             }
+        }
+
+        if ((sf::Mouse::isButtonPressed(sf::Mouse::Left) && (clock.getElapsedTime().asMilliseconds() - time > 300)) ||
+            (sf::Mouse::isButtonPressed(sf::Mouse::Right) && (clock.getElapsedTime().asMilliseconds() - time > 100))) {
+            field_step(&field);
+            time = clock.getElapsedTime().asMilliseconds();
         }
         
         window.clear();
