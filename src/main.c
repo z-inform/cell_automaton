@@ -38,12 +38,13 @@ int main(){
     group_resize(field -> group_ptr);
 
 
-    sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM", sf::Style::Titlebar | sf::Style::Close);
+    sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM", sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize);
     window.setVerticalSyncEnabled(true);
     sf::Clock clock;
     int64_t time = clock.getElapsedTime().asMilliseconds();
     int64_t move_delay = clock.getElapsedTime().asMilliseconds();
     bool auto_run = false;
+    bool fill_mode = false;
     int x_offset = 0;
     int y_offset = 0;
 
@@ -55,7 +56,19 @@ int main(){
             if (event.type == sf::Event::Closed)
                 window.close();
 
-            if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.type == sf::Event::Resized) {
+                float w = static_cast<float>(event.size.width);
+                float h = static_cast<float>(event.size.height);          
+                window.setView(
+                    sf::View(
+                        sf::Vector2f(w / 2.0, h / 2.0), 
+                        sf::Vector2f(w, h)
+                    )
+                );			
+            }
+
+
+            if (event.type == sf::Event::MouseButtonPressed || (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && fill_mode)) {
                 sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
                 coord_pair coord; //coord of cell under cursor
                 coord.x = (mouse_pos.x) / 12 - x_offset;
@@ -96,6 +109,9 @@ int main(){
                         field_free(&field);
                         break;
 
+                    case (sf::Keyboard::F):
+                        fill_mode = !fill_mode;
+                        break;
 
                     default:
                         break;
