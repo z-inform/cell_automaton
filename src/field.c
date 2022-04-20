@@ -456,10 +456,10 @@ field_node* group_merge(Field* field_ptr, field_node* cur_node, field_node* othe
     new_group -> group_block = calloc(x_size * y_size, 1);
 
     //debug dumps
-    group_dump(cur_group);
-    group_dump(other_group);
-    printf("xsize = %d; ysize = %d\n", x_size, y_size);
-    printf("new x = %d; new y = %d\n", new_coord.x, new_coord.y);
+    //group_dump(cur_group);
+    //group_dump(other_group);
+    //printf("xsize = %d; ysize = %d\n", x_size, y_size);
+    //printf("new x = %d; new y = %d\n", new_coord.x, new_coord.y);
 
     for (unsigned int x = 0; x < (cur_group -> x_group_size); x++) {
         for (unsigned int y = 0; y < (cur_group -> y_group_size); y++) {

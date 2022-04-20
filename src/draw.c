@@ -16,33 +16,33 @@ int draw_cell(sf::RenderWindow &window, int x, int y){
     return 0;
 }
 
-int draw_group(sf::RenderWindow &window, Group* group_ptr){
+int draw_group(sf::RenderWindow &window, Group* group_ptr, int x_offset, int y_offset){
 
     sf::RectangleShape outline;
     outline.setSize(sf::Vector2f(group_ptr -> x_group_size * 12, group_ptr -> y_group_size * 12));
     outline.setOutlineColor(sf::Color(128, 0, 0));
     outline.setOutlineThickness(1);
     outline.setFillColor(sf::Color::Transparent);
-    outline.setPosition((group_ptr -> group_coord.x) * 12,(group_ptr -> group_coord.y) * 12);
+    outline.setPosition((group_ptr -> group_coord.x + x_offset) * 12, (group_ptr -> group_coord.y + y_offset) * 12);
     window.draw(outline);
 
     for (unsigned int x = 0; x < group_ptr -> x_group_size; x++) {
         for (unsigned int y = 0; y < group_ptr -> y_group_size; y++) {
             if (COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, x, y))
-                draw_cell(window, group_ptr -> group_coord.x + (int) x, group_ptr -> group_coord.y + (int) y);
+                draw_cell(window, group_ptr -> group_coord.x + (int) x + x_offset, group_ptr -> group_coord.y + (int) y + y_offset);
         }
     }
 
     return 0;
 }
 
-int draw_field(sf::RenderWindow &window, Field* field_ptr){
+int draw_field(sf::RenderWindow &window, Field* field_ptr, int x_offset, int y_offset){
     if ((field_ptr == NULL) || (field_ptr[0] == NULL))
         return -1;
     field_node* cur_node = field_ptr[0];
 
     while (cur_node != NULL) {
-        draw_group(window, cur_node -> group_ptr);
+        draw_group(window, cur_node -> group_ptr, x_offset, y_offset);
         cur_node = cur_node -> next;
     }
 

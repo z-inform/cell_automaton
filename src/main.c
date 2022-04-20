@@ -32,18 +32,20 @@ int main(){
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, i) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 6 + i) = 1;
     }
-    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 0, 0) = 1;
+    //COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 0, 0) = 1;
 
 
     group_resize(field -> group_ptr);
-    //printf("base group size %ux%u\n", field -> group_ptr -> x_group_size, field -> group_ptr -> y_group_size);
 
 
     sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM", sf::Style::Titlebar | sf::Style::Close);
     window.setVerticalSyncEnabled(true);
     sf::Clock clock;
     int64_t time = clock.getElapsedTime().asMilliseconds();
+    int64_t move_delay = clock.getElapsedTime().asMilliseconds();
     bool auto_run = false;
+    int x_offset = 0;
+    int y_offset = 0;
 
     while (window.isOpen()) {
         sf::Event event;
@@ -55,11 +57,9 @@ int main(){
 
             if (event.type == sf::Event::MouseButtonPressed) {
                 sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
-                printf("Click on raw %d %d\n", mouse_pos.x, mouse_pos.y);
                 coord_pair coord; //coord of cell under cursor
-                coord.x = (mouse_pos.x) / 12;
-                coord.y = (mouse_pos.y) / 12;
-                printf("Click on %d %d\n", coord.x, coord.y);
+                coord.x = (mouse_pos.x) / 12 - x_offset;
+                coord.y = (mouse_pos.y) / 12 - y_offset;
                 Group* group_ptr = find_cell_group(&field, coord.x, coord.y);
                 if (group_ptr == NULL) { //check if group with this cell exists
                     group_ptr = (Group*) malloc(sizeof(Group)); //create a group if not
@@ -73,7 +73,6 @@ int main(){
                     field_merge(&field);
                     field_split(&field);
                 } else { //if exists just toggle the cell
-                    printf("Click in existing group\n");
                     COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, coord.x - group_ptr -> group_coord.x, coord.y - group_ptr -> group_coord.y) =
                         !COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, coord.x - group_ptr -> group_coord.x, coord.y - group_ptr -> group_coord.y);
                     if (group_resize(group_ptr) == 1)
@@ -97,21 +96,51 @@ int main(){
                         field_free(&field);
                         break;
 
+
                     default:
                         break;
+                }
+
+                if (clock.getElapsedTime().asMilliseconds() - move_delay > 1) {
+                    switch (event.key.code) {
+
+                        case (sf::Keyboard::Right):
+                            x_offset--;
+                            move_delay = clock.getElapsedTime().asMilliseconds();
+                            break;
+
+                        case (sf::Keyboard::Left):
+                            x_offset++;
+                            move_delay = clock.getElapsedTime().asMilliseconds();
+                            break;
+
+                        case (sf::Keyboard::Up):
+                            y_offset++;
+                            move_delay = clock.getElapsedTime().asMilliseconds();
+                            break;
+
+                        case (sf::Keyboard::Down):
+                            y_offset--;
+                            move_delay = clock.getElapsedTime().asMilliseconds();
+                            break;
+
+                        default:
+                            break;
+
+                    }
                 }
             }
 
         }
 
-        if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Space) || auto_run) && (clock.getElapsedTime().asMilliseconds() - time > 10)) {
+        if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Space) || auto_run) && (clock.getElapsedTime().asMilliseconds() - time > 100)) {
             field_step(&field);
             time = clock.getElapsedTime().asMilliseconds();
         }
 
 
         window.clear();
-        draw_field(window, &field);
+        draw_field(window, &field, x_offset, y_offset);
         window.display();
 
     }
