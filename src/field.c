@@ -461,15 +461,15 @@ field_node* group_merge(Field* field_ptr, field_node* cur_node, field_node* othe
     //printf("xsize = %d; ysize = %d\n", x_size, y_size);
     //printf("new x = %d; new y = %d\n", new_coord.x, new_coord.y);
 
-    for (unsigned int x = 0; x < (cur_group -> x_group_size); x++) {
-        for (unsigned int y = 0; y < (cur_group -> y_group_size); y++) {
+    for (unsigned int x = 1; x < (cur_group -> x_group_size) - 1; x++) {
+        for (unsigned int y = 1; y < (cur_group -> y_group_size) - 1; y++) {
             COORDVAL(new_group -> group_block, x_size, x + (unsigned int) (cur_group -> group_coord.x - new_coord.x), y + (unsigned int) (cur_group -> group_coord.y - new_coord.y)) = 
                 COORDVAL(cur_group -> group_block, cur_group -> x_group_size, x, y);
         }
     }
 
-    for (unsigned int x = 0; x < (other_group -> x_group_size); x++) {
-        for (unsigned int y = 0; y < (other_group -> y_group_size); y++) {
+    for (unsigned int x = 1; x < (other_group -> x_group_size) - 1; x++) {
+        for (unsigned int y = 1; y < (other_group -> y_group_size) - 1; y++) {
             COORDVAL(new_group -> group_block, x_size, x + (unsigned int) (other_group -> group_coord.x - new_coord.x), y + (unsigned int) (other_group -> group_coord.y - new_coord.y)) = 
                 COORDVAL(other_group -> group_block, other_group -> x_group_size, x, y);
         }

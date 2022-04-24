@@ -1,15 +1,25 @@
 #include "field.h"
 #include "analysis.h"
+#include "draw.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
-Field copy_field(Field* src){
+#define ANALYSIS_DEPTH 10
+
+int history_length(History* history);
+int find_node_in_field(Field* field, field_node* node);
+int analyze_static(History* history);
+int analyze_oscillator(History* history);
+state_node* find_group_exact(Group_state* state, Group* group);
+
+Group_state copy_field_add_states(Field* src){
     field_node* cur_node = src[0];
-    field_node* new_head = NULL;
-    field_node* prev = NULL;
+    state_node* new_head = NULL;
+    state_node* prev = NULL;
 
     while (cur_node != NULL) {
-        field_node* new_node = (field_node*) malloc(sizeof(field_node));
+        state_node* new_node = (state_node*) malloc(sizeof(state_node));
 
         new_node -> prev = prev;
         new_node -> next = NULL;
@@ -17,6 +27,10 @@ Field copy_field(Field* src){
             prev -> next = new_node;
         }
 
+        if (cur_node -> prev == NULL)
+            new_head = new_node;
+
+        new_node -> status = unknown;
         new_node -> group_ptr = (Group*) malloc(sizeof(Group));
         memcpy(new_node -> group_ptr, cur_node -> group_ptr, sizeof(Group));
         unsigned int size = new_node -> group_ptr -> x_group_size * new_node -> group_ptr -> y_group_size;
@@ -25,7 +39,6 @@ Field copy_field(Field* src){
 
         prev = new_node;
         cur_node = cur_node -> next;
-            
     }
 
     return new_head;
@@ -34,23 +47,37 @@ Field copy_field(Field* src){
 int history_update(History* history, Field* field_ptr){
     hist_node* cur_hist = history[0];
 
-    while (cur_hist -> next != NULL)
-        cur_hist = cur_hist -> next;
-
     hist_node* new_node = (hist_node*) malloc(sizeof(hist_node));
-    new_node -> prev = cur_hist;
-    new_node -> next = NULL;
-    cur_hist -> next = new_node;
-    new_node -> field_state = copy_field(field_ptr);
+    new_node -> prev = NULL;
+    new_node -> next = cur_hist;
+    if (cur_hist != NULL)
+        cur_hist -> prev = new_node;
+    new_node -> state = copy_field_add_states(field_ptr);
+    history[0] = new_node;
+    cur_hist = new_node;
+
+    int length = 1;
+    while (cur_hist -> next != NULL) {
+        cur_hist = cur_hist -> next;
+        length++;
+    }
+
+    if (length > ANALYSIS_DEPTH) { //if reached analysis depth in history size - clear oldest history entry
+        cur_hist -> prev -> next = NULL;
+        free_group_states(&cur_hist -> state);
+        free(cur_hist); 
+    }
 
     return 0;
 }
 
 int history_clear(History* history){
+    if (history == NULL || history[0] == NULL)
+        return 0;
     hist_node* cur_node = history[0];
 
     while (1) {
-        field_free(&cur_node -> field_state);
+        free_group_states(&cur_node -> state);
         free(cur_node -> prev); 
         if (cur_node -> next == NULL) {
             free(cur_node);
@@ -61,6 +88,122 @@ int history_clear(History* history){
 
     *history = NULL;
 
+    return 0;
+}
+
+int history_length(History* history){
+    hist_node* cur_node = history[0];
+    int length = 0;
+    while (cur_node != NULL) {
+        cur_node = cur_node -> next;
+        length++;
+    }
+    return length;
+}
+
+state_node* find_group_exact(Group_state* state, Group* group){
+        
+    state_node* cur_node = state[0];
+
+    while (cur_node != NULL) {
+        Group* cur_group = cur_node -> group_ptr;
+        //printf("Comparing groups\n");
+        //group_dump(cur_group);
+        //group_dump(group);
+        if ((cur_group -> group_coord.x == group -> group_coord.x) &&
+            (cur_group -> group_coord.y == group -> group_coord.y) &&
+            (cur_group -> x_group_size == group -> x_group_size) && 
+            (cur_group -> y_group_size == group -> y_group_size) &&
+            (!memcmp(cur_group -> group_block, group -> group_block, group -> x_group_size * group -> y_group_size)))
+            return cur_node;
+
+
+        cur_node = cur_node -> next;
+    }
+        
+    return NULL;
+}
+
+int analyze_static(History* history){
+    Group_state cur_node = history[0] -> state;
+    if (history[0] -> next == NULL) 
+        return -1;
+    Group_state prev_gen = history[0] -> next -> state;
+
+
+    while (cur_node != NULL) {
+        state_node* target_node = find_group_exact(&prev_gen, cur_node -> group_ptr);
+        if (target_node != NULL)
+            cur_node -> status = stable;
+        cur_node = cur_node -> next;
+    }
+
+    return 0;
+}
+
+int analyze_oscillator(History* history){
+    Group_state cur_node = history[0] -> state;
+    if (history[0] -> next == NULL)
+        return -1;
+
+    while (cur_node != NULL) {
+        unsigned int period = 1;
+        hist_node* older_gen = history[0] -> next;
+        while (older_gen != NULL) {
+            state_node* target_node = find_group_exact(&(older_gen -> state), cur_node -> group_ptr);
+            if (target_node != NULL) {
+                if (period == 1) 
+                    cur_node -> status = stable;
+                else {
+                    cur_node -> status = oscillator; //could add a secondary check if many false-positives
+                }
+                cur_node -> period = period;
+                break;
+            }
+            period++;
+            older_gen = older_gen -> next;        
+        }
+        cur_node = cur_node -> next;
+    }
+
+    return 0;
+}
+
+int field_step_analyzed(Field* field_ptr, History* history){
+    field_step(field_ptr);
+    history_update(history, field_ptr);
+
+    analyze_state(history);
+
+    return 0;
+}
+
+int analyze_state(History* history){
+    //analyze_static(history);
+    analyze_oscillator(history);
+    //find_gliders
+    //printf("________________\n");
+    return 0;
+}
+
+int free_group_states(Group_state* state){
+    if (state == NULL || state[0] == NULL)
+        return 0;
+
+    state_node* cur_node = state[0];
+    while (cur_node -> next != NULL) {
+       free(cur_node -> group_ptr -> group_block);
+       free(cur_node -> group_ptr);
+       cur_node = cur_node -> next;
+       free(cur_node -> prev);
+    }
+
+    free(cur_node -> group_ptr -> group_block);
+    free(cur_node -> group_ptr);
+
+    free(cur_node);
+
+    state[0] = NULL;
     return 0;
 }
 

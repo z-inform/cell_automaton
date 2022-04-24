@@ -6,11 +6,12 @@
 #include "field.h"
 #include "draw.h"
 #include "generator.h"
+#include "analysis.h"
 
 #define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + (SX) * (Y) + X))
 
-#define XSIZE 10u
-#define YSIZE 10u
+#define XSIZE 50u
+#define YSIZE 50u
 
 void dumb_dump(Group* group_ptr);
 
@@ -32,10 +33,10 @@ int main(){
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, i) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 6 + i) = 1;
     }
-    //COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 0, 0) = 1;
-
 
     group_resize(field -> group_ptr);
+
+    History hist = NULL;
 
 
     sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM", sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize);
@@ -150,18 +151,20 @@ int main(){
         }
 
         if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Space) || auto_run) && (clock.getElapsedTime().asMilliseconds() - time > 100)) {
-            field_step(&field);
+            field_step_analyzed(&field, &hist);
             time = clock.getElapsedTime().asMilliseconds();
         }
 
 
         window.clear();
         draw_field(window, &field, x_offset, y_offset);
+        color_status(window, &hist, x_offset, y_offset);
         window.display();
 
     }
 
     field_free(&field);
+    history_clear(&hist);
     return 0;
 }
 

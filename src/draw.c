@@ -70,3 +70,47 @@ void field_dump(Field* field_ptr){
     }
 }
 
+int color_status(sf::RenderWindow &window, History* hist, int x_offset, int y_offset){
+
+    if (hist[0] == NULL)
+        return -1;
+
+    state_node* cur_state = hist[0] -> state;
+
+    while (cur_state != NULL) {
+        Group* group_ptr = cur_state -> group_ptr;
+        sf::RectangleShape color_block;
+        color_block.setSize(sf::Vector2f(group_ptr -> x_group_size * 12, group_ptr -> y_group_size * 12));
+        color_block.setPosition((group_ptr -> group_coord.x + x_offset) * 12, (group_ptr -> group_coord.y + y_offset) * 12);
+        sf::Color color;
+        switch (cur_state -> status) {
+            case stable: //green for stable
+                color.r = 51;
+                color.g = 204; 
+                color.b = 51;
+                break;
+            case oscillator: //orange for oscillator
+                color.r = 255;
+                color.g = 152; 
+                color.b = 51;
+                break;
+            case glider: //blue for glider
+                color.r = 0;
+                color.g = 102; 
+                color.b = 255;
+                break;
+            case unknown: //magenta for unknown
+                color.r = 255;
+                color.g = 0; 
+                color.b = 255;
+                break;
+        }
+        color.a = 50;
+        color_block.setFillColor(color);
+        window.draw(color_block);
+
+        cur_state = cur_state -> next;
+    }
+    return 0;
+}
+
