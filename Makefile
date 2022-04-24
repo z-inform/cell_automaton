@@ -5,7 +5,7 @@ LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 PROG = $(BUILDDIR)/cell.elf
 MODULES = field main draw generator analysis
 OBJ = $(addsuffix .o, $(MODULES))
-SRC = $(addsuffix .cpp, $(MODULES))
+SRC = $(addsuffix .c, $(MODULES))
 
 BUILDDIR = build
 SRCDIR = src

@@ -9,9 +9,10 @@
 
 int history_length(History* history);
 int find_node_in_field(Field* field, field_node* node);
-int analyze_static(History* history);
-int analyze_oscillator(History* history);
-state_node* find_group_exact(Group_state* state, Group* group);
+int analyze_oscillator(History history);
+int analyze_glider(History history);
+state_node* find_group_exact(Group_state state, Group* group, int x_offset, int y_offset);
+state_node* find_group_moved(Group_state state, Group* group);
 
 Group_state copy_field_add_states(Field* src){
     field_node* cur_node = src[0];
@@ -101,17 +102,17 @@ int history_length(History* history){
     return length;
 }
 
-state_node* find_group_exact(Group_state* state, Group* group){
+state_node* find_group_exact(Group_state state, Group* group, int x_offset, int y_offset){
         
-    state_node* cur_node = state[0];
+    state_node* cur_node = state;
 
     while (cur_node != NULL) {
         Group* cur_group = cur_node -> group_ptr;
         //printf("Comparing groups\n");
         //group_dump(cur_group);
         //group_dump(group);
-        if ((cur_group -> group_coord.x == group -> group_coord.x) &&
-            (cur_group -> group_coord.y == group -> group_coord.y) &&
+        if ((cur_group -> group_coord.x == (group -> group_coord.x + x_offset)) &&
+            (cur_group -> group_coord.y == (group -> group_coord.y + y_offset)) &&
             (cur_group -> x_group_size == group -> x_group_size) && 
             (cur_group -> y_group_size == group -> y_group_size) &&
             (!memcmp(cur_group -> group_block, group -> group_block, group -> x_group_size * group -> y_group_size)))
@@ -124,33 +125,33 @@ state_node* find_group_exact(Group_state* state, Group* group){
     return NULL;
 }
 
-int analyze_static(History* history){
-    Group_state cur_node = history[0] -> state;
-    if (history[0] -> next == NULL) 
-        return -1;
-    Group_state prev_gen = history[0] -> next -> state;
-
+state_node* find_group_moved(Group_state state, Group* group){
+        
+    state_node* cur_node = state;
 
     while (cur_node != NULL) {
-        state_node* target_node = find_group_exact(&prev_gen, cur_node -> group_ptr);
-        if (target_node != NULL)
-            cur_node -> status = stable;
+        Group* cur_group = cur_node -> group_ptr;
+        if ((cur_group -> x_group_size == group -> x_group_size) && 
+            (cur_group -> y_group_size == group -> y_group_size) &&
+            (!memcmp(cur_group -> group_block, group -> group_block, group -> x_group_size * group -> y_group_size)))
+            return cur_node;
+
         cur_node = cur_node -> next;
     }
-
-    return 0;
+        
+    return NULL;
 }
 
-int analyze_oscillator(History* history){
-    Group_state cur_node = history[0] -> state;
-    if (history[0] -> next == NULL)
+int analyze_oscillator(History history){
+    Group_state cur_node = history -> state;
+    if (history -> next == NULL)
         return -1;
 
     while (cur_node != NULL) {
         unsigned int period = 1;
-        hist_node* older_gen = history[0] -> next;
+        hist_node* older_gen = history -> next;
         while (older_gen != NULL) {
-            state_node* target_node = find_group_exact(&(older_gen -> state), cur_node -> group_ptr);
+            state_node* target_node = find_group_exact(older_gen -> state, cur_node -> group_ptr, 0, 0);
             if (target_node != NULL) {
                 if (period == 1) 
                     cur_node -> status = stable;
@@ -169,19 +170,59 @@ int analyze_oscillator(History* history){
     return 0;
 }
 
-int field_step_analyzed(Field* field_ptr, History* history){
-    field_step(field_ptr);
-    history_update(history, field_ptr);
+int analyze_glider(History history){
+    Group_state cur_node = history -> state;
+    if (history -> next == NULL)
+        return -1;
 
-    analyze_state(history);
+    while (cur_node != NULL) {
+        unsigned int period = 1;
+        hist_node* older_gen = history -> next;
+        while (older_gen != NULL) {
+            state_node* target_node = find_group_moved(older_gen -> state, cur_node -> group_ptr);
+
+            if (target_node != NULL) {
+                int x_offset = target_node -> group_ptr -> group_coord.x - cur_node -> group_ptr -> group_coord.x;    
+                int y_offset = target_node -> group_ptr -> group_coord.y - cur_node -> group_ptr -> group_coord.y;    
+
+                if (((x_offset != 0) || (y_offset != 0)) && (period * 2 < ANALYSIS_DEPTH)) { //continue checks only if moved and if analysis depth allows
+                    x_offset *= 2;
+                    y_offset *= 2;
+                    hist_node* two_period_gen = older_gen;
+                    for (unsigned int i = 0; i < period; i++) //get a period older in history
+                        two_period_gen = two_period_gen -> next;
+                    target_node = find_group_exact(two_period_gen -> state, cur_node -> group_ptr, x_offset, y_offset); //check if glider was in correct place two periods ago
+                    if (target_node != NULL) {
+                        cur_node -> status = glider;
+                        cur_node -> period = period;
+                        break;
+                    }
+                }                
+            }
+            
+            period++;
+            older_gen = older_gen -> next; 
+        }
+
+        cur_node = cur_node -> next;
+    }
 
     return 0;
 }
 
-int analyze_state(History* history){
-    //analyze_static(history);
+
+int field_step_analyzed(Field* field_ptr, History* history){
+    field_step(field_ptr);
+    history_update(history, field_ptr);
+
+    analyze_state(*history);
+
+    return 0;
+}
+
+int analyze_state(History history){
     analyze_oscillator(history);
-    //find_gliders
+    analyze_glider(history);
     //printf("________________\n");
     return 0;
 }

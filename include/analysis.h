@@ -24,6 +24,6 @@ typedef hist_node* History;
 int history_update(History* history, Field* field_ptr);
 int history_clear(History* history);
 Group_state copy_field_add_states(Field* src);
-int analyze_state(History* history);
+int analyze_state(History history);
 int field_step_analyzed(Field* field_ptr, History* history);
 int free_group_states(Group_state* state);
