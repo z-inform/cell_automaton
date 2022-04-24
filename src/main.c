@@ -14,6 +14,7 @@
 #define YSIZE 50u
 
 void dumb_dump(Group* group_ptr);
+void print_help();
 
 int main(){
 
@@ -114,6 +115,10 @@ int main(){
                         fill_mode = !fill_mode;
                         break;
 
+                    case (sf::Keyboard::H):
+                        print_help();
+                        break;
+
                     default:
                         break;
                 }
@@ -166,6 +171,25 @@ int main(){
     field_free(&field);
     history_clear(&hist);
     return 0;
+}
+
+void print_help(){
+    printf("Rules:\n\tbasic Conway's \"Game of life\" rules are used\n"
+           "Controls:\n"
+           "\tLMB - toggle cell under cursor\n"
+           "\tSpace - step the field (can be held down)\n"
+           "\tEnter - toggles auto run\n"
+           "\tC - clears the field\n"
+           "\tQ - exits the application\n"
+           "\tF - toggles fill mode (Hold down LMB to fill multiple cells)\n"
+           "\tArrows - move the field around\n"
+           "Colors:\n"
+           "\tPurple - status unknows (still developing or analysis depth not enough to detect oscillations)\n"
+           "\tOrange - oscillator\n"
+           "\tGreen - static\n"
+           "\tBlue - glider\n");
+
+
 }
 
 void dumb_dump(Group* group_ptr){
