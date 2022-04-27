@@ -7,7 +7,7 @@
 
 #define ANALYSIS_DEPTH 10
 
-int history_length(History* history);
+unsigned int history_length(History* history);
 int find_node_in_field(Field* field, field_node* node);
 int analyze_oscillator(History history);
 int analyze_glider(History history);
@@ -92,9 +92,9 @@ int history_clear(History* history){
     return 0;
 }
 
-int history_length(History* history){
+unsigned int history_length(History* history){
     hist_node* cur_node = history[0];
-    int length = 0;
+    unsigned int length = 0;
     while (cur_node != NULL) {
         cur_node = cur_node -> next;
         length++;
@@ -185,7 +185,7 @@ int analyze_glider(History history){
                 int x_offset = target_node -> group_ptr -> group_coord.x - cur_node -> group_ptr -> group_coord.x;    
                 int y_offset = target_node -> group_ptr -> group_coord.y - cur_node -> group_ptr -> group_coord.y;    
 
-                if (((x_offset != 0) || (y_offset != 0)) && (period * 2 < ANALYSIS_DEPTH)) { //continue checks only if moved and if analysis depth allows
+                if (((x_offset != 0) || (y_offset != 0)) && (period * 2 < history_length(&history))) { //continue checks only if moved and if analysis depth allows
                     x_offset *= 2;
                     y_offset *= 2;
                     hist_node* two_period_gen = older_gen;
