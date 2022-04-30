@@ -126,19 +126,29 @@ state_node* find_group_exact(Group_state state, Group* group, int x_offset, int 
 }
 
 state_node* find_group_moved(Group_state state, Group* group){
+    
+    static Group* group_save;
+    static state_node* progress_save;
+
+    if ((state != NULL) && (group != NULL)) {
+        group_save = group;
+        progress_save = state;
+    }
         
-    state_node* cur_node = state;
+    state_node* cur_node = progress_save;
 
     while (cur_node != NULL) {
         Group* cur_group = cur_node -> group_ptr;
-        if ((cur_group -> x_group_size == group -> x_group_size) && 
-            (cur_group -> y_group_size == group -> y_group_size) &&
-            (!memcmp(cur_group -> group_block, group -> group_block, group -> x_group_size * group -> y_group_size)))
+        if ((cur_group -> x_group_size == group_save -> x_group_size) && 
+            (cur_group -> y_group_size == group_save -> y_group_size) &&
+            (!memcmp(cur_group -> group_block, group_save -> group_block, group_save -> x_group_size * group_save -> y_group_size))) {
+            progress_save = cur_node -> next;
             return cur_node;
+        }
 
         cur_node = cur_node -> next;
     }
-        
+
     return NULL;
 }
 
@@ -179,9 +189,10 @@ int analyze_glider(History history){
         unsigned int period = 1;
         hist_node* older_gen = history -> next;
         while (older_gen != NULL) {
+
             state_node* target_node = find_group_moved(older_gen -> state, cur_node -> group_ptr);
 
-            if (target_node != NULL) {
+            while (target_node != NULL) {
                 int x_offset = target_node -> group_ptr -> group_coord.x - cur_node -> group_ptr -> group_coord.x;    
                 int y_offset = target_node -> group_ptr -> group_coord.y - cur_node -> group_ptr -> group_coord.y;    
 
@@ -197,8 +208,12 @@ int analyze_glider(History history){
                         cur_node -> period = period;
                         break;
                     }
-                }                
+                }
+
+                target_node = find_group_moved(NULL, NULL);
             }
+
+
             
             period++;
             older_gen = older_gen -> next; 
@@ -209,7 +224,6 @@ int analyze_glider(History history){
 
     return 0;
 }
-
 
 int field_step_analyzed(Field* field_ptr, History* history){
     field_step(field_ptr);
