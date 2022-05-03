@@ -8,6 +8,8 @@
 #include "generator.h"
 #include "analysis.h"
 
+#define MAX_GEN 20000
+
 #define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + (SX) * (Y) + X))
 
 #define XSIZE 50u
@@ -73,8 +75,8 @@ int main(){
             if (event.type == sf::Event::MouseButtonPressed || (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && fill_mode)) {
                 sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
                 coord_pair coord; //coord of cell under cursor
-                coord.x = (mouse_pos.x) / 12 - x_offset;
-                coord.y = (mouse_pos.y) / 12 - y_offset;
+                coord.x = (mouse_pos.x) / CELL_SIZE - x_offset;
+                coord.y = (mouse_pos.y) / CELL_SIZE - y_offset;
                 Group* group_ptr = find_cell_group(&field, coord.x, coord.y);
                 if (group_ptr == NULL) { //check if group with this cell exists
                     group_ptr = (Group*) malloc(sizeof(Group)); //create a group if not
@@ -98,6 +100,7 @@ int main(){
             }
 
             if (event.type == sf::Event::KeyPressed) {
+                int steps;
                 switch (event.key.code) {
                     case (sf::Keyboard::Enter):
                         auto_run = !auto_run;
@@ -117,6 +120,16 @@ int main(){
 
                     case (sf::Keyboard::H):
                         print_help();
+                        break;
+
+                    case (sf::Keyboard::R):
+                        if ((hist == NULL) || (field == NULL))
+                            break;
+                        for (steps = 0; (steps < MAX_GEN) && !check_evolve_finish(hist -> state); steps++) {
+                            field_step_analyzed(&field, &hist);
+                        }
+                        if (steps == MAX_GEN - 1)
+                            printf("MAX_REACHED\n");
                         break;
 
                     default:
@@ -182,6 +195,7 @@ void print_help(){
            "\tC - clears the field\n"
            "\tQ - exits the application\n"
            "\tF - toggles fill mode (Hold down LMB to fill multiple cells)\n"
+           "\tR - runs simulation till stable or max is reached\n"
            "\tArrows - move the field around\n"
            "Colors:\n"
            "\tPurple - status unknows (still developing or analysis depth not enough to detect oscillations)\n"

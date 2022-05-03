@@ -13,6 +13,7 @@ int analyze_oscillator(History history);
 int analyze_glider(History history);
 state_node* find_group_exact(Group_state state, Group* group, int x_offset, int y_offset);
 state_node* find_group_moved(Group_state state, Group* group, int next);
+int check_glider_to_inf(Group_state state, state_node* node);
 
 Group_state copy_field_add_states(Field* src){
     field_node* cur_node = src[0];
@@ -209,6 +210,8 @@ int analyze_glider(History history){
                     if (target_node != NULL) {
                         cur_node -> status = glider;
                         cur_node -> period = period;
+                        cur_node -> x_speed = x_offset;
+                        cur_node -> y_speed = y_offset;
                         break;
                     }
                 }
@@ -265,3 +268,43 @@ int free_group_states(Group_state* state){
     return 0;
 }
 
+int check_evolve_finish(Group_state state){
+    state_node* cur_node = state;
+
+    while (cur_node != NULL) {
+        if (cur_node -> status == unknown)
+            break;
+
+        if ((cur_node -> status == glider) && !check_glider_to_inf(state, cur_node))
+            break;
+
+        cur_node = cur_node -> next;
+    }
+
+    if (cur_node == NULL)
+        return 1;
+    else 
+        return 0;
+
+}
+
+int check_glider_to_inf(Group_state state, state_node* node){ //really dumb and incorrect version
+
+    int away_on_x = 0;
+    int away_on_y = 0;
+
+    if (((node -> group_ptr -> group_coord.x > 100) && (node -> x_speed >= 0)) ||
+        ((node -> group_ptr -> group_coord.x < -100) && (node -> x_speed <=0)))
+        away_on_x = 1;
+
+    if (((node -> group_ptr -> group_coord.y > 100) && (node -> y_speed >= 0)) ||
+        ((node -> group_ptr -> group_coord.y < -100) && (node -> y_speed <=0)))
+        away_on_y = 1;
+
+    if (away_on_x && away_on_y)
+        return 1;
+    else 
+        return 0;
+
+
+}

@@ -7,11 +7,11 @@
 
 int draw_cell(sf::RenderWindow &window, int x, int y){
     sf::RectangleShape cell_rect;
-    cell_rect.setSize(sf::Vector2f(12, 12));
+    cell_rect.setSize(sf::Vector2f(CELL_SIZE, CELL_SIZE));
     cell_rect.setOutlineColor(sf::Color(0, 0, 0));
     cell_rect.setOutlineThickness(-0.5);
     //sf::Vector2u size = window.getSize();
-    cell_rect.setPosition(x * 12, y * 12);
+    cell_rect.setPosition(x * CELL_SIZE, y * CELL_SIZE);
     window.draw(cell_rect);
     return 0;
 }
@@ -19,11 +19,11 @@ int draw_cell(sf::RenderWindow &window, int x, int y){
 int draw_group(sf::RenderWindow &window, Group* group_ptr, int x_offset, int y_offset){
 
     sf::RectangleShape outline;
-    outline.setSize(sf::Vector2f(group_ptr -> x_group_size * 12, group_ptr -> y_group_size * 12));
+    outline.setSize(sf::Vector2f(group_ptr -> x_group_size * CELL_SIZE, group_ptr -> y_group_size * CELL_SIZE));
     outline.setOutlineColor(sf::Color(128, 0, 0));
     outline.setOutlineThickness(1);
     outline.setFillColor(sf::Color::Transparent);
-    outline.setPosition((group_ptr -> group_coord.x + x_offset) * 12, (group_ptr -> group_coord.y + y_offset) * 12);
+    outline.setPosition((group_ptr -> group_coord.x + x_offset) * CELL_SIZE, (group_ptr -> group_coord.y + y_offset) * CELL_SIZE);
     window.draw(outline);
 
     for (unsigned int x = 0; x < group_ptr -> x_group_size; x++) {
@@ -80,8 +80,8 @@ int color_status(sf::RenderWindow &window, History* hist, int x_offset, int y_of
     while (cur_state != NULL) {
         Group* group_ptr = cur_state -> group_ptr;
         sf::RectangleShape color_block;
-        color_block.setSize(sf::Vector2f(group_ptr -> x_group_size * 12, group_ptr -> y_group_size * 12));
-        color_block.setPosition((group_ptr -> group_coord.x + x_offset) * 12, (group_ptr -> group_coord.y + y_offset) * 12);
+        color_block.setSize(sf::Vector2f(group_ptr -> x_group_size * CELL_SIZE, group_ptr -> y_group_size * CELL_SIZE));
+        color_block.setPosition((group_ptr -> group_coord.x + x_offset) * CELL_SIZE, (group_ptr -> group_coord.y + y_offset) * CELL_SIZE);
         sf::Color color;
         switch (cur_state -> status) {
             case stable: //green for stable

@@ -6,6 +6,8 @@ enum States {stable, oscillator, glider, unknown};
 typedef struct state_node {
     States status;
     unsigned int period;
+    int x_speed;
+    int y_speed;
     Group* group_ptr;
     state_node* prev;
     state_node* next;
@@ -27,3 +29,4 @@ Group_state copy_field_add_states(Field* src);
 int analyze_state(History history);
 int field_step_analyzed(Field* field_ptr, History* history);
 int free_group_states(Group_state* state);
+int check_evolve_finish(Group_state state);
