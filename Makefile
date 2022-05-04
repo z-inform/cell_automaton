@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -Wextra -I./$(INCLDIR) -g -O0 -fsanitize=address
+CFLAGS = -Wall -Wextra -I./$(INCLDIR)
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 
 PROG = $(BUILDDIR)/cell.elf
@@ -11,10 +11,14 @@ BUILDDIR = build
 SRCDIR = src
 INCLDIR = include
 
-all : $(PROG)
+release: CFLAGS += -O3
+debug: CFLAGS += -g -O0 -fsanitize=address
+
+debug : $(PROG)
+release : $(PROG)
 
 $(PROG) : $(addprefix $(BUILDDIR)/, $(OBJ))
-		$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+		$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 $(addprefix $(BUILDDIR)/, $(OBJ)) : $(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCLDIR)/%.h
 		$(CC) $(CFLAGS) -c $< -o $@

@@ -8,12 +8,12 @@
 #include "generator.h"
 #include "analysis.h"
 
-#define MAX_GEN 20000
+#define MAX_GEN 500000
 
 #define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + (SX) * (Y) + X))
 
-#define XSIZE 50u
-#define YSIZE 50u
+#define XSIZE 10u
+#define YSIZE 10u
 
 extern int CELL_SIZE;
 
@@ -32,17 +32,25 @@ int main(){
     field -> group_ptr -> y_group_size = YSIZE;
     field -> group_ptr -> group_block = calloc(XSIZE * YSIZE, 1);
 
+    /*
     for (int i = 0; i < 3; i++) {
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i, 4) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4 + i, 4) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, i) = 1;
         COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 6 + i) = 1;
     }
+    */
+
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 1, 0) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 1, 1) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 1, 2) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 0, 1) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 2, 0) = 1;
 
     group_resize(field -> group_ptr);
 
     History hist = NULL;
-
+    history_update(&hist, &field);
 
     sf::RenderWindow window(sf::VideoMode(1500, 700), "OAOA MMMM", sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize);
     window.setVerticalSyncEnabled(true);
@@ -91,6 +99,7 @@ int main(){
                     add_group(&field, group_ptr);
                     field_merge(&field);
                     field_split(&field);
+                    history_update(&hist, &field);
                 } else { //if exists just toggle the cell
                     COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, coord.x - group_ptr -> group_coord.x, coord.y - group_ptr -> group_coord.y) =
                         !COORDVAL(group_ptr -> group_block, group_ptr -> x_group_size, coord.x - group_ptr -> group_coord.x, coord.y - group_ptr -> group_coord.y);
@@ -98,6 +107,7 @@ int main(){
                         remove_group(&field, group_ptr);
                     field_merge(&field);
                     field_split(&field);
+                    history_update(&hist, &field);
                 }
             }
 
@@ -130,8 +140,10 @@ int main(){
                         for (steps = 0; (steps < MAX_GEN) && !check_evolve_finish(hist -> state); steps++) {
                             field_step_analyzed(&field, &hist);
                         }
-                        if (steps == MAX_GEN - 1)
-                            printf("MAX_REACHED\n");
+                        if (steps == MAX_GEN)
+                            printf("MAX REACHED\n");
+                        else 
+                            printf("STEPS: %d\n", steps);
                         break;
 
                     case (sf::Keyboard::Hyphen):
@@ -150,22 +162,22 @@ int main(){
                     switch (event.key.code) {
 
                         case (sf::Keyboard::Right):
-                            x_offset--;
+                            x_offset -= 2;
                             move_delay = clock.getElapsedTime().asMilliseconds();
                             break;
 
                         case (sf::Keyboard::Left):
-                            x_offset++;
+                            x_offset += 2;
                             move_delay = clock.getElapsedTime().asMilliseconds();
                             break;
 
                         case (sf::Keyboard::Up):
-                            y_offset++;
+                            y_offset += 2;
                             move_delay = clock.getElapsedTime().asMilliseconds();
                             break;
 
                         case (sf::Keyboard::Down):
-                            y_offset--;
+                            y_offset -= 2;
                             move_delay = clock.getElapsedTime().asMilliseconds();
                             break;
 

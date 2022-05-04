@@ -210,8 +210,9 @@ int analyze_glider(History history){
                     if (target_node != NULL) {
                         cur_node -> status = glider;
                         cur_node -> period = period;
-                        cur_node -> x_speed = x_offset;
-                        cur_node -> y_speed = y_offset;
+                        cur_node -> x_speed = -x_offset;
+                        cur_node -> y_speed = -y_offset;
+                        //printf("Speed x = %d; y = %d\n", cur_node -> x_speed, cur_node -> y_speed);
                         break;
                     }
                 }
@@ -293,12 +294,12 @@ int check_glider_to_inf(Group_state state, state_node* node){ //really dumb and 
     int away_on_x = 0;
     int away_on_y = 0;
 
-    if (((node -> group_ptr -> group_coord.x > 100) && (node -> x_speed >= 0)) ||
-        ((node -> group_ptr -> group_coord.x < -100) && (node -> x_speed <=0)))
+    if (((node -> group_ptr -> group_coord.x > 50) && (node -> x_speed >= 0)) ||
+        ((node -> group_ptr -> group_coord.x < -50) && (node -> x_speed <=0)))
         away_on_x = 1;
 
-    if (((node -> group_ptr -> group_coord.y > 100) && (node -> y_speed >= 0)) ||
-        ((node -> group_ptr -> group_coord.y < -100) && (node -> y_speed <=0)))
+    if (((node -> group_ptr -> group_coord.y > 50) && (node -> y_speed >= 0)) ||
+        ((node -> group_ptr -> group_coord.y < -50) && (node -> y_speed <=0)))
         away_on_y = 1;
 
     if (away_on_x && away_on_y)
