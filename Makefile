@@ -15,6 +15,7 @@ release: CFLAGS += -O3
 debug: CFLAGS += -g -O0 -fsanitize=address
 
 debug : $(PROG)
+
 release : $(PROG)
 
 $(PROG) : $(addprefix $(BUILDDIR)/, $(OBJ))

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 #define ANALYSIS_DEPTH 10
 
@@ -244,7 +245,6 @@ int field_step_analyzed(Field* field_ptr, History* history){
 int analyze_state(History history){
     analyze_oscillator(history);
     analyze_glider(history);
-    //printf("________________\n");
     return 0;
 }
 
@@ -290,16 +290,46 @@ int check_evolve_finish(Group_state state){
 }
 
 int check_glider_to_inf(Group_state state, state_node* node){ //really dumb and incorrect version
+    
+    coord_pair stable_lb = {INT_MAX, INT_MAX};
+    coord_pair stable_rt = {INT_MIN, INT_MIN};
+
+    state_node* cur_node = state;
+
+    while (cur_node != NULL) {
+        if (cur_node -> status == stable || cur_node -> status == oscillator) {
+
+            if (cur_node -> group_ptr -> group_coord.x < stable_lb.x)
+                stable_lb.x = cur_node -> group_ptr -> group_coord.x;
+            if (cur_node -> group_ptr -> group_coord.y < stable_lb.y)
+                stable_lb.y = cur_node -> group_ptr -> group_coord.y;
+
+            if (cur_node -> group_ptr -> group_coord.x + (int) cur_node -> group_ptr -> x_group_size > stable_rt.x)
+                stable_rt.x = cur_node -> group_ptr -> group_coord.x + (int) cur_node -> group_ptr -> x_group_size;
+            if (cur_node -> group_ptr -> group_coord.y + (int) cur_node -> group_ptr -> y_group_size > stable_rt.y)
+                stable_rt.y = cur_node -> group_ptr -> group_coord.y + (int) cur_node -> group_ptr -> y_group_size;
+
+        }
+
+        cur_node = cur_node -> next;
+    }
+
+    if (stable_lb.x == INT_MAX)
+        stable_lb = {0, 0};
+
+    if (stable_rt.x == INT_MIN)
+        stable_rt = {0, 0};
+    
 
     int away_on_x = 0;
     int away_on_y = 0;
 
-    if (((node -> group_ptr -> group_coord.x > 50) && (node -> x_speed >= 0)) ||
-        ((node -> group_ptr -> group_coord.x < -50) && (node -> x_speed <=0)))
+    if (((node -> group_ptr -> group_coord.x > stable_rt.x) && (node -> x_speed >= 0)) ||
+        ((node -> group_ptr -> group_coord.x < stable_lb.x) && (node -> x_speed <=0)))
         away_on_x = 1;
 
-    if (((node -> group_ptr -> group_coord.y > 50) && (node -> y_speed >= 0)) ||
-        ((node -> group_ptr -> group_coord.y < -50) && (node -> y_speed <=0)))
+    if (((node -> group_ptr -> group_coord.y > stable_rt.y) && (node -> y_speed >= 0)) ||
+        ((node -> group_ptr -> group_coord.y < stable_lb.y) && (node -> y_speed <=0)))
         away_on_y = 1;
 
     if (away_on_x && away_on_y)

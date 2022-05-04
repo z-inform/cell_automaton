@@ -32,20 +32,19 @@ int main(){
     field -> group_ptr -> y_group_size = YSIZE;
     field -> group_ptr -> group_block = calloc(XSIZE * YSIZE, 1);
 
-    /*
-    for (int i = 0; i < 3; i++) {
-        COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, i, 4) = 1;
-        COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4 + i, 4) = 1;
-        COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, i) = 1;
-        COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 6 + i) = 1;
-    }
-    */
-
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 0, 0) = 1;
     COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 1, 0) = 1;
-    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 1, 1) = 1;
-    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 1, 2) = 1;
-    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 0, 1) = 1;
     COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 2, 0) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 1) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 3, 2) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 4, 2) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 6, 4) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 6, 5) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 7, 4) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 8, 4) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 8, 0) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 8, 1) = 1;
+    COORDVAL(field -> group_ptr -> group_block, field -> group_ptr -> x_group_size, 8, 2) = 1;
 
     group_resize(field -> group_ptr);
 
@@ -138,6 +137,8 @@ int main(){
                         if ((hist == NULL) || (field == NULL))
                             break;
                         for (steps = 0; (steps < MAX_GEN) && !check_evolve_finish(hist -> state); steps++) {
+                            if (steps % 1000 == 0)
+                                printf("%d steps passed\n", steps);
                             field_step_analyzed(&field, &hist);
                         }
                         if (steps == MAX_GEN)

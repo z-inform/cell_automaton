@@ -8,13 +8,6 @@ struct coord_pair_struct {
 
 typedef struct coord_pair_struct coord_pair;
 
-struct ucoord_pair_struct {
-    unsigned int x;
-    unsigned int y;
-};
-
-typedef struct ucoord_pair_struct ucoord_pair;
-
 struct group_struct{
     coord_pair group_coord;
     unsigned int x_group_size;
