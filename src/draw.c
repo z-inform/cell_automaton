@@ -3,6 +3,8 @@
 #include "field.h"
 #include "draw.h"
 
+int CELL_SIZE = 10;
+
 #define COORDVAL(A, SX, X, Y) (*((uint8_t*)A + (SX) * (Y) + X))
 
 int draw_cell(sf::RenderWindow &window, int x, int y){
@@ -10,7 +12,6 @@ int draw_cell(sf::RenderWindow &window, int x, int y){
     cell_rect.setSize(sf::Vector2f(CELL_SIZE, CELL_SIZE));
     cell_rect.setOutlineColor(sf::Color(0, 0, 0));
     cell_rect.setOutlineThickness(-0.5);
-    //sf::Vector2u size = window.getSize();
     cell_rect.setPosition(x * CELL_SIZE, y * CELL_SIZE);
     window.draw(cell_rect);
     return 0;

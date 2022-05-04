@@ -15,6 +15,8 @@
 #define XSIZE 50u
 #define YSIZE 50u
 
+extern int CELL_SIZE;
+
 void dumb_dump(Group* group_ptr);
 void print_help();
 
@@ -130,6 +132,14 @@ int main(){
                         }
                         if (steps == MAX_GEN - 1)
                             printf("MAX_REACHED\n");
+                        break;
+
+                    case (sf::Keyboard::Hyphen):
+                        CELL_SIZE -= 2;
+                        break;
+
+                    case (sf::Keyboard::Equal):
+                        CELL_SIZE += 2;
                         break;
 
                     default:
